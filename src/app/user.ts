@@ -137,6 +137,9 @@ export default class User {
         this.payload = payload;
         this.scopes = (typeof payload.scope === 'string') ? payload.scope.split((' ')) : [];
         this.accessToken = token;
+        this.authClient.setCredentials({
+            access_token: token
+        });
 
         return true;
     }

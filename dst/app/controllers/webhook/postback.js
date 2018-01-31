@@ -248,20 +248,6 @@ function choosePaymentMethod(user, paymentMethod, transactionId) {
             auth: user.authClient
         });
         const contact = yield personService.getContacts({ personId: 'me' });
-        // pecorino支払取引サービスクライアントを生成
-        // const oauth2client = new sskts.pecorinoapi.auth.OAuth2({
-        //     domain: <string>process.env.PECORINO_AUTHORIZE_SERVER_DOMAIN
-        // });
-        // oauth2client.setCredentials(user.authClient.credentials);
-        // const payTransactionService = new sskts.pecorinoapi.service.transaction.Pay({
-        //     endpoint: <string>process.env.PECORINO_API_ENDPOINT,
-        //     auth: oauth2client
-        // });
-        // const pecorinoAuthorizeActionRepo = new sskts.repository.action.authorize.Pecorino(sskts.mongoose.connection);
-        // const transactionRepo = new sskts.repository.Transaction(sskts.mongoose.connection);
-        // const pecorinoAuthorization = await sskts.service.transaction.placeOrderInProgress.action.authorize.pecorino.create(
-        //     'aebaf573-98c1-4cea-84bf-e20ebdc6869a', transactionId, 'accountId', price
-        // )(pecorinoAuthorizeActionRepo, transactionRepo, payTransactionService);
         const placeOrderService = new ssktsapi.service.transaction.PlaceOrder({
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
