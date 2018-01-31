@@ -108,12 +108,8 @@ export default class User {
     }
 
     public generateAuthUrl() {
-        const scopes = [
-            'phone', 'openid', 'email', 'aws.cognito.signin.user.admin', 'profile'
-        ];
-
         return this.authClient.generateAuthUrl({
-            scopes: scopes,
+            scopes: [],
             state: this.state,
             codeVerifier: <string>process.env.API_CODE_VERIFIER
         });

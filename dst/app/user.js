@@ -49,11 +49,8 @@ class User {
         });
     }
     generateAuthUrl() {
-        const scopes = [
-            'phone', 'openid', 'email', 'aws.cognito.signin.user.admin', 'profile'
-        ];
         return this.authClient.generateAuthUrl({
-            scopes: scopes,
+            scopes: [],
             state: this.state,
             codeVerifier: process.env.API_CODE_VERIFIER
         });
