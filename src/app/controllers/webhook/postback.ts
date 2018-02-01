@@ -358,7 +358,7 @@ ${reservedTickets}
 --------------------
 決済方法
 --------------------
-${order.paymentMethods[0].paymentMethod}
+${order.paymentMethods.map((p) => p.paymentMethod).join(' ')}
 ${order.price}
 --------------------
 割引
