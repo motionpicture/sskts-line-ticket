@@ -145,9 +145,32 @@ export async function searchAccountTradeActions(user: User) {
     });
     const actions = await personService.searchAccountTradeActions({ personId: 'me' });
 
+    const actionsStr = actions.map(
+        (a) => {
+            let actionName = '';
+            switch (a.typeOf) {
+                case 'PayAction':
+                    actionName = '支払';
+                    break;
+                case 'TakeAction':
+                    actionName = '入金';
+
+                default:
+            }
+
+            return [
+                (a.typeOf === 'PayAction') ? '出' : '入',
+                actionName,
+                moment(a.endDate).format('YY.MM.DD'),
+                `${a.object.price}円`,
+                (a.typeOf === 'PayAction') ? a.recipient.name : a.agent.name,
+                a.object.notes
+            ].join(' ');
+        }
+    ).join('\n');
     await LINE.pushMessage(
         user.userId,
-        actions.map((a) => `${moment(a.endDate).format('YY-MM-DD')} ${a.typeOf} 出 ${a.object.price}円 ${a.recipient.name}`).join('\n')
+        actionsStr
     );
 }
 
@@ -178,7 +201,10 @@ export async function askEventStartDate(userId: string) {
                                     label: '日付選択',
                                     mode: 'date',
                                     data: 'action=searchEventsByDate',
-                                    initial: moment().format('YYYY-MM-DD')
+                                    initial: moment().format('YYYY-MM-DD'),
+                                    // tslint:disable-next-line:no-magic-numbers
+                                    max: moment().add(2, 'days').format('YYYY-MM-DD'),
+                                    min: moment().format('YYYY-MM-DD')
                                 }
                             ]
                         }
@@ -235,10 +261,10 @@ export async function askFromWhenAndToWhen(userId: string) {
  * @memberof app.controllers.webhook.message
  */
 export async function publishURI4transactionsCSV(userId: string, dateFrom: string, dateThrough: string) {
-    await LINE.pushMessage(userId, `${dateFrom}-${dateThrough}の取引を検索しています...`);
+    await LINE.pushMessage(userId, `${dateFrom} - ${dateThrough}の取引を検索しています...`);
 
-    const startFrom = moment(`${dateFrom}T00:00:00+09:00`, 'YYYYMMDDThh:mm:ssZ');
-    const startThrough = moment(`${dateThrough}T00:00:00+09:00`, 'YYYYMMDDThh:mm:ssZ').add(1, 'day');
+    const startFrom = moment(`${dateFrom}T00: 00: 00 + 09: 00`, 'YYYYMMDDThh:mm:ssZ');
+    const startThrough = moment(`${dateThrough}T00: 00: 00 + 09: 00`, 'YYYYMMDDThh:mm:ssZ').add(1, 'day');
 
     const csv = await sskts.service.transaction.placeOrder.download(
         {
@@ -251,7 +277,7 @@ export async function publishURI4transactionsCSV(userId: string, dateFrom: strin
     await LINE.pushMessage(userId, 'csvを作成しています...');
 
     const sasUrl = await sskts.service.util.uploadFile({
-        fileName: `sskts-line-ticket-transactions-${moment().format('YYYYMMDDHHmmss')}.csv`,
+        fileName: `sskts - line - ticket - transactions - ${moment().format('YYYYMMDDHHmmss')}.csv`,
         text: csv
     })();
 

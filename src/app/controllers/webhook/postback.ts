@@ -328,10 +328,43 @@ export async function confirmOrder(user: User, transactionId: string) {
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
     });
-    const transactionResult = await placeOrderService.confirm({
+    const order = await placeOrderService.confirm({
         transactionId: transactionId
     });
-    await LINE.pushMessage(user.userId, transactionResult.orderNumber);
+    const event = order.acceptedOffers[0].itemOffered.reservationFor;
+    const reservedTickets = order.acceptedOffers.map(
+        // tslint:disable-next-line:max-line-length
+        (orderItem) => `${orderItem.itemOffered.reservedTicket.ticketedSeat.seatNumber} ${orderItem.itemOffered.reservedTicket.coaTicketInfo.ticketName} ￥${orderItem.itemOffered.reservedTicket.coaTicketInfo.salePrice}`
+    ).join('\n');
+
+    const orderDetails = `--------------------
+注文内容
+--------------------
+予約番号: ${order.confirmationNumber}
+--------------------
+購入者情報
+--------------------
+${order.customer.name}
+${order.customer.telephone}
+${order.customer.email}
+${(order.customer.memberOf !== undefined) ? `${order.customer.memberOf.membershipNumber}` : ''}
+--------------------
+座席予約
+--------------------
+${order.acceptedOffers[0].itemOffered.reservationFor.name.ja}
+${moment(event.startDate).format('YYYY-MM-DD HH:mm')}-${moment(event.endDate).format('HH:mm')}
+@${event.superEvent.location.name.ja} ${event.location.name.ja}
+${reservedTickets}
+--------------------
+決済方法
+--------------------
+${order.paymentMethods[0].paymentMethod}
+${order.price}
+--------------------
+割引
+--------------------
+`;
+    await LINE.pushMessage(user.userId, orderDetails);
 }
 
 /**

@@ -152,7 +152,26 @@ function searchAccountTradeActions(user) {
             auth: user.authClient
         });
         const actions = yield personService.searchAccountTradeActions({ personId: 'me' });
-        yield LINE.pushMessage(user.userId, actions.map((a) => `${moment(a.endDate).format('YY-MM-DD')} ${a.typeOf} 出 ${a.object.price}円 ${a.recipient.name}`).join('\n'));
+        const actionsStr = actions.map((a) => {
+            let actionName = '';
+            switch (a.typeOf) {
+                case 'PayAction':
+                    actionName = '支払';
+                    break;
+                case 'TakeAction':
+                    actionName = '入金';
+                default:
+            }
+            return [
+                (a.typeOf === 'PayAction') ? '出' : '入',
+                actionName,
+                moment(a.endDate).format('YY.MM.DD'),
+                `${a.object.price}円`,
+                (a.typeOf === 'PayAction') ? a.recipient.name : a.agent.name,
+                a.object.notes
+            ].join(' ');
+        }).join('\n');
+        yield LINE.pushMessage(user.userId, actionsStr);
     });
 }
 exports.searchAccountTradeActions = searchAccountTradeActions;
@@ -182,7 +201,10 @@ function askEventStartDate(userId) {
                                     label: '日付選択',
                                     mode: 'date',
                                     data: 'action=searchEventsByDate',
-                                    initial: moment().format('YYYY-MM-DD')
+                                    initial: moment().format('YYYY-MM-DD'),
+                                    // tslint:disable-next-line:no-magic-numbers
+                                    max: moment().add(2, 'days').format('YYYY-MM-DD'),
+                                    min: moment().format('YYYY-MM-DD')
                                 }
                             ]
                         }
@@ -239,16 +261,16 @@ exports.askFromWhenAndToWhen = askFromWhenAndToWhen;
  */
 function publishURI4transactionsCSV(userId, dateFrom, dateThrough) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield LINE.pushMessage(userId, `${dateFrom}-${dateThrough}の取引を検索しています...`);
-        const startFrom = moment(`${dateFrom}T00:00:00+09:00`, 'YYYYMMDDThh:mm:ssZ');
-        const startThrough = moment(`${dateThrough}T00:00:00+09:00`, 'YYYYMMDDThh:mm:ssZ').add(1, 'day');
+        yield LINE.pushMessage(userId, `${dateFrom} - ${dateThrough}の取引を検索しています...`);
+        const startFrom = moment(`${dateFrom}T00: 00: 00 + 09: 00`, 'YYYYMMDDThh:mm:ssZ');
+        const startThrough = moment(`${dateThrough}T00: 00: 00 + 09: 00`, 'YYYYMMDDThh:mm:ssZ').add(1, 'day');
         const csv = yield sskts.service.transaction.placeOrder.download({
             startFrom: startFrom.toDate(),
             startThrough: startThrough.toDate()
         }, 'csv')(new sskts.repository.Transaction(sskts.mongoose.connection));
         yield LINE.pushMessage(userId, 'csvを作成しています...');
         const sasUrl = yield sskts.service.util.uploadFile({
-            fileName: `sskts-line-ticket-transactions-${moment().format('YYYYMMDDHHmmss')}.csv`,
+            fileName: `sskts - line - ticket - transactions - ${moment().format('YYYYMMDDHHmmss')}.csv`,
             text: csv
         })();
         yield LINE.pushMessage(userId, `download -> ${sasUrl} `);
