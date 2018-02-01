@@ -151,8 +151,8 @@ function searchAccountTradeActions(user) {
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
         });
-        const actions = yield personService.searchAccountTradeActions({ personId: 'me' });
-        const actionsStr = actions.map((a) => {
+        const tradeActions = yield personService.searchAccountTradeActions({ personId: 'me' });
+        const actionsStr = tradeActions.map((a) => {
             let actionName = '';
             switch (a.typeOf) {
                 case 'PayAction':
@@ -162,14 +162,19 @@ function searchAccountTradeActions(user) {
                     actionName = '入金';
                 default:
             }
+            // tslint:disable-next-line:prefer-template
             return [
+                '●',
                 (a.typeOf === 'PayAction') ? '出' : '入',
                 actionName,
-                moment(a.endDate).format('YY.MM.DD'),
-                `${a.object.price}円`,
-                (a.typeOf === 'PayAction') ? a.recipient.name : a.agent.name,
-                a.object.notes
-            ].join(' ');
+                moment(a.endDate).format('YY.MM.DD HH:mm'),
+                `${a.object.price}円`
+            ].join(' ')
+                + '\n'
+                + [
+                    (a.typeOf === 'PayAction') ? a.recipient.name : a.agent.name,
+                    a.object.notes
+                ].join(' ');
         }).join('\n');
         yield LINE.pushMessage(user.userId, actionsStr);
     });
