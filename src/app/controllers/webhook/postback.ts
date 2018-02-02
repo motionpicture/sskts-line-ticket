@@ -266,13 +266,14 @@ export async function choosePaymentMethod(user: User, paymentMethod: string, tra
         price: price
     });
     debug('Pecorino残高確認済', pecorinoAuthorization);
+    await LINE.pushMessage(user.userId, '残高の確認がとれました。');
 
     await placeOrderService.setCustomerContact({
         transactionId: transactionId,
         contact: contact
     });
     debug('customer contact set.');
-    await LINE.pushMessage(user.userId, `注文内容
+    await LINE.pushMessage(user.userId, `以下の通り注文を受け付けようとしています...
 ------------
 購入者情報
 ------------

@@ -260,12 +260,13 @@ function choosePaymentMethod(user, paymentMethod, transactionId) {
             price: price
         });
         debug('Pecorino残高確認済', pecorinoAuthorization);
+        yield LINE.pushMessage(user.userId, '残高の確認がとれました。');
         yield placeOrderService.setCustomerContact({
             transactionId: transactionId,
             contact: contact
         });
         debug('customer contact set.');
-        yield LINE.pushMessage(user.userId, `注文内容
+        yield LINE.pushMessage(user.userId, `以下の通り注文を受け付けようとしています...
 ------------
 購入者情報
 ------------

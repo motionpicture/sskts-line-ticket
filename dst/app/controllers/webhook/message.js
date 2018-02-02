@@ -155,7 +155,9 @@ function searchAccountTradeActions(user) {
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
         });
-        const tradeActions = yield personService.searchAccountTradeActions({ personId: 'me' });
+        let tradeActions = yield personService.searchAccountTradeActions({ personId: 'me' });
+        // tslint:disable-next-line:no-magic-numbers
+        tradeActions = tradeActions.reverse().slice(0, 10);
         const actionsStr = tradeActions.map((a) => {
             let actionName = '';
             switch (a.typeOf) {
