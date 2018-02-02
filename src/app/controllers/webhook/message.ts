@@ -24,15 +24,19 @@ export async function pushHowToUse(userId: string) {
     // tslint:disable-next-line:no-multiline-string
     const text = `How to use
 --------------------
-取引照会
+座席予約
 --------------------
-[購入番号]を入力
-例:810000
+'予約'と入力
 
 --------------------
-取引CSVダウンロード
+Pecorino残高照会
 --------------------
-'csv'と入力
+'残高'と入力
+
+--------------------
+Pecorino取引履歴検索
+--------------------
+'口座取引履歴'と入力
 
 --------------------
 logout
