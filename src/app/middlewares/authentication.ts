@@ -17,21 +17,6 @@ export default async (req: Request, res: Response, next: NextFunction) => {
     try {
         // ユーザー認証無効化の設定の場合
         if (process.env.USER_AUTHENTICATION_DISABLED === '1') {
-            // req.user = new User({
-            //     host: req.hostname,
-            //     userId: 'U28fba84b4008d60291fc861e2562b34f',
-            //     state: JSON.stringify(req.body)
-            // });
-            // // tslint:disable-next-line:max-line-length
-            // req.user.accessToken = '';
-            // req.user.authClient.setCredentials({
-            //     access_token: req.user.accessToken,
-            //     // tslint:disable-next-line:max-line-length
-            //     refresh_token: ''
-            // });
-
-            // debug(await req.user.findTransaction());
-            // await req.user.saveTransaction(<any>{ test: 'test' });
             next();
 
             return;
@@ -49,7 +34,11 @@ export default async (req: Request, res: Response, next: NextFunction) => {
         });
         const credentials = await req.user.getCredentials();
         if (credentials === null) {
-            throw new sskts.factory.errors.Unauthorized();
+            // ログインボタンを送信
+            await sendLoginButton(req.user);
+            res.status(OK).send('ok');
+
+            return;
         }
 
         // RedisからBearerトークンを取り出す

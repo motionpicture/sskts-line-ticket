@@ -23,20 +23,6 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
     try {
         // ユーザー認証無効化の設定の場合
         if (process.env.USER_AUTHENTICATION_DISABLED === '1') {
-            // req.user = new User({
-            //     host: req.hostname,
-            //     userId: 'U28fba84b4008d60291fc861e2562b34f',
-            //     state: JSON.stringify(req.body)
-            // });
-            // // tslint:disable-next-line:max-line-length
-            // req.user.accessToken = '';
-            // req.user.authClient.setCredentials({
-            //     access_token: req.user.accessToken,
-            //     // tslint:disable-next-line:max-line-length
-            //     refresh_token: ''
-            // });
-            // debug(await req.user.findTransaction());
-            // await req.user.saveTransaction(<any>{ test: 'test' });
             next();
             return;
         }
@@ -52,7 +38,10 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
         });
         const credentials = yield req.user.getCredentials();
         if (credentials === null) {
-            throw new sskts.factory.errors.Unauthorized();
+            // ログインボタンを送信
+            yield sendLoginButton(req.user);
+            res.status(http_status_1.OK).send('ok');
+            return;
         }
         // RedisからBearerトークンを取り出す
         yield express_middleware_1.cognitoAuth({
