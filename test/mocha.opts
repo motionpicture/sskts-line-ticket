@@ -2,3 +2,4 @@
 --recursive
 --reporter spec
 --compilers ts:ts-node/register
+--exit

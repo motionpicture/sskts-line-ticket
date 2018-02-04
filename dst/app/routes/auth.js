@@ -21,6 +21,8 @@ const authRouter = express.Router();
  * サインイン
  * Cognitoからリダイレクトしてくる
  */
+// tslint:disable-next-line:no-single-line-block-comment
+/* istanbul ignore next */
 authRouter.get('/signIn', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     try {
         // stateにはイベントオブジェクトとして受け取ったリクエストボディが入っている
@@ -66,6 +68,8 @@ authRouter.get('/signIn', (req, res, next) => __awaiter(this, void 0, void 0, fu
 /**
  * ログアウト
  */
+// tslint:disable-next-line:no-single-line-block-comment
+/* istanbul ignore next */
 authRouter.get('/logout', (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     try {
         if (req.query.userId !== undefined) {

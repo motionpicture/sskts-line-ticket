@@ -20,11 +20,12 @@ const redisClient = new redis({
     password: process.env.REDIS_KEY,
     tls: { servername: process.env.REDIS_HOST }
 });
-if (process.env.USER_EXPIRES_IN_SECONDS === undefined) {
-    throw new Error('USER_EXPIRES_IN_SECONDS undefined.');
+const USER_EXPIRES_IN_SECONDS = process.env.USER_EXPIRES_IN_SECONDS;
+if (USER_EXPIRES_IN_SECONDS === undefined) {
+    throw new Error('Environment variable USER_EXPIRES_IN_SECONDS required.');
 }
 // tslint:disable-next-line:no-magic-numbers
-const EXPIRES_IN_SECONDS = parseInt(process.env.USER_EXPIRES_IN_SECONDS, 10);
+const EXPIRES_IN_SECONDS = parseInt(USER_EXPIRES_IN_SECONDS, 10);
 /**
  * LINEユーザー
  * @class
