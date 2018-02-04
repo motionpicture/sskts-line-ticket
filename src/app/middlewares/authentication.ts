@@ -47,14 +47,17 @@ export default async (req: Request, res: Response, next: NextFunction) => {
             userId: userId,
             state: JSON.stringify(req.body)
         });
+        const credentials = await req.user.getCredentials();
+        if (credentials === null) {
+            throw new sskts.factory.errors.Unauthorized();
+        }
 
         // RedisからBearerトークンを取り出す
         await cognitoAuth({
             issuers: [<string>process.env.API_TOKEN_ISSUER],
-            authorizedHandler: async (user, token) => {
+            authorizedHandler: async () => {
                 // ログイン状態をセットしてnext
-                req.user.setCredentials(user, token);
-                // await req.user.isAuthenticated();
+                req.user.setCredentials(credentials);
                 next();
             },
             unauthorizedHandler: async () => {
@@ -62,14 +65,7 @@ export default async (req: Request, res: Response, next: NextFunction) => {
                 await sendLoginButton(req.user);
                 res.status(OK).send('ok');
             },
-            tokenDetecter: async () => {
-                const token = await req.user.getToken();
-                if (token === null) {
-                    throw new sskts.factory.errors.Unauthorized();
-                }
-
-                return token;
-            }
+            tokenDetecter: async () => credentials.access_token
         })(req, res, next);
     } catch (error) {
         next(new sskts.factory.errors.Unauthorized(error.message));

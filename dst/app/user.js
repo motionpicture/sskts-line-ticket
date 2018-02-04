@@ -54,17 +54,18 @@ class User {
     generateLogoutUrl() {
         return this.authClient.generateLogoutUrl();
     }
-    getToken() {
+    getCredentials() {
         return __awaiter(this, void 0, void 0, function* () {
-            return redisClient.get(`token.${this.userId}`);
+            return redisClient.get(`line-ticket.credentials.${this.userId}`)
+                .then((value) => (value === null) ? null : JSON.parse(value));
         });
     }
-    setCredentials(payload, token) {
+    setCredentials(credentials) {
+        const payload = jwt.decode(credentials.access_token);
+        debug('payload:', payload);
         this.payload = payload;
-        this.accessToken = token;
-        this.authClient.setCredentials({
-            access_token: token
-        });
+        this.accessToken = credentials.access_token;
+        this.authClient.setCredentials(credentials);
         return this;
     }
     signIn(code) {
@@ -77,13 +78,11 @@ class User {
             }
             // ログイン状態を保持
             const results = yield redisClient.multi()
-                .set(`token.${this.userId}`, credentials.access_token)
-                .expire(`token.${this.userId}`, EXPIRES_IN_SECONDS, debug)
+                .set(`line-ticket.credentials.${this.userId}`, JSON.stringify(credentials))
+                .expire(`line-ticket.credentials.${this.userId}`, EXPIRES_IN_SECONDS, debug)
                 .exec();
             debug('results:', results);
-            const payload = jwt.decode(credentials.access_token);
-            debug('payload:', payload);
-            this.setCredentials(payload, credentials.access_token);
+            this.setCredentials(Object.assign({}, credentials, { access_token: credentials.access_token }));
             return this;
         });
     }

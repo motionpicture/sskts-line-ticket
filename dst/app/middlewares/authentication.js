@@ -50,13 +50,16 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
             userId: userId,
             state: JSON.stringify(req.body)
         });
+        const credentials = yield req.user.getCredentials();
+        if (credentials === null) {
+            throw new sskts.factory.errors.Unauthorized();
+        }
         // RedisからBearerトークンを取り出す
         yield express_middleware_1.cognitoAuth({
             issuers: [process.env.API_TOKEN_ISSUER],
-            authorizedHandler: (user, token) => __awaiter(this, void 0, void 0, function* () {
+            authorizedHandler: () => __awaiter(this, void 0, void 0, function* () {
                 // ログイン状態をセットしてnext
-                req.user.setCredentials(user, token);
-                // await req.user.isAuthenticated();
+                req.user.setCredentials(credentials);
                 next();
             }),
             unauthorizedHandler: () => __awaiter(this, void 0, void 0, function* () {
@@ -64,13 +67,7 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
                 yield sendLoginButton(req.user);
                 res.status(http_status_1.OK).send('ok');
             }),
-            tokenDetecter: () => __awaiter(this, void 0, void 0, function* () {
-                const token = yield req.user.getToken();
-                if (token === null) {
-                    throw new sskts.factory.errors.Unauthorized();
-                }
-                return token;
-            })
+            tokenDetecter: () => __awaiter(this, void 0, void 0, function* () { return credentials.access_token; })
         })(req, res, next);
     }
     catch (error) {

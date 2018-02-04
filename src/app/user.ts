@@ -13,21 +13,23 @@ const redisClient = new redis({
     tls: <any>{ servername: <string>process.env.REDIS_HOST }
 });
 
-/**
- * cognito認可サーバーのOPEN ID構成インターフェース
- * @export
- * @interface
- */
-export interface IOpenIdConfiguration {
-    issuer: string;
-    authorization_endpoint: string;
-    token_endpoint: string;
-    jwks_uri: string;
-    response_types_supported: string[];
-    subject_types_supported: string[];
-    version: string;
-    id_token_signing_alg_values_supported: string[];
-    x509_url: string;
+export interface ICredentials {
+    /**
+     * リフレッシュトークン
+     */
+    refresh_token?: string;
+    /**
+     * 期限UNIXタイムスタンプ
+     */
+    expiry_date?: number;
+    /**
+     * アクセストークン
+     */
+    access_token: string;
+    /**
+     * トークンタイプ
+     */
+    token_type?: string;
 }
 
 /**
@@ -114,16 +116,18 @@ export default class User {
         return this.authClient.generateLogoutUrl();
     }
 
-    public async getToken(): Promise<string | null> {
-        return redisClient.get(`token.${this.userId}`);
+    public async getCredentials(): Promise<ICredentials | null> {
+        return redisClient.get(`line-ticket.credentials.${this.userId}`)
+            .then((value) => (value === null) ? null : JSON.parse(value));
     }
 
-    public setCredentials(payload: IPayload, token: string) {
+    public setCredentials(credentials: ICredentials) {
+        const payload = <any>jwt.decode(credentials.access_token);
+        debug('payload:', payload);
+
         this.payload = payload;
-        this.accessToken = token;
-        this.authClient.setCredentials({
-            access_token: token
-        });
+        this.accessToken = credentials.access_token;
+        this.authClient.setCredentials(credentials);
 
         return this;
     }
@@ -139,14 +143,12 @@ export default class User {
 
         // ログイン状態を保持
         const results = await redisClient.multi()
-            .set(`token.${this.userId}`, credentials.access_token)
-            .expire(`token.${this.userId}`, EXPIRES_IN_SECONDS, debug)
+            .set(`line-ticket.credentials.${this.userId}`, JSON.stringify(credentials))
+            .expire(`line-ticket.credentials.${this.userId}`, EXPIRES_IN_SECONDS, debug)
             .exec();
         debug('results:', results);
 
-        const payload = <any>jwt.decode(credentials.access_token);
-        debug('payload:', payload);
-        this.setCredentials(payload, credentials.access_token);
+        this.setCredentials({ ...credentials, access_token: credentials.access_token });
 
         return this;
     }
