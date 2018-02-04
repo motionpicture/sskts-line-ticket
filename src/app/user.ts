@@ -1,6 +1,7 @@
 import * as ssktsapi from '@motionpicture/sskts-api-nodejs-client';
 import * as createDebug from 'debug';
 import * as redis from 'ioredis';
+import * as jwt from 'jsonwebtoken';
 
 const debug = createDebug('sskts-line-ticket:user');
 
@@ -126,27 +127,6 @@ export default class User {
         return this;
     }
 
-    // public async isAuthenticated() {
-    //     const token = await redisClient.get(`token.${this.userId}`);
-    //     if (token === null) {
-    //         return false;
-    //     }
-
-    //     const payload = await validateToken(token, {
-    //         issuer: ISSUER,
-    //         tokenUse: 'access' // access tokenのみ受け付ける
-    //     });
-    //     debug('verified! payload:', payload);
-    //     // this.payload = payload;
-    //     // this.scopes = (typeof payload.scope === 'string') ? payload.scope.split((' ')) : [];
-    //     this.accessToken = token;
-    //     this.authClient.setCredentials({
-    //         access_token: token
-    //     });
-
-    //     return true;
-    // }
-
     public async signIn(code: string) {
         // 認証情報を取得できればログイン成功
         const credentials = await this.authClient.getToken(code, <string>process.env.API_CODE_VERIFIER);
@@ -163,8 +143,9 @@ export default class User {
             .exec();
         debug('results:', results);
 
-        const payload = credentials.access_token.split('.')[1];
-        this.setCredentials(JSON.parse(atob(payload)), credentials.access_token);
+        const payload = <any>jwt.decode(credentials.access_token);
+        debug('payload:', payload);
+        this.setCredentials(payload, credentials.access_token);
 
         return this;
     }

@@ -11,6 +11,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const ssktsapi = require("@motionpicture/sskts-api-nodejs-client");
 const createDebug = require("debug");
 const redis = require("ioredis");
+const jwt = require("jsonwebtoken");
 const debug = createDebug('sskts-line-ticket:user');
 const redisClient = new redis({
     host: process.env.REDIS_HOST,
@@ -65,24 +66,6 @@ class User {
         });
         return this;
     }
-    // public async isAuthenticated() {
-    //     const token = await redisClient.get(`token.${this.userId}`);
-    //     if (token === null) {
-    //         return false;
-    //     }
-    //     const payload = await validateToken(token, {
-    //         issuer: ISSUER,
-    //         tokenUse: 'access' // access tokenのみ受け付ける
-    //     });
-    //     debug('verified! payload:', payload);
-    //     // this.payload = payload;
-    //     // this.scopes = (typeof payload.scope === 'string') ? payload.scope.split((' ')) : [];
-    //     this.accessToken = token;
-    //     this.authClient.setCredentials({
-    //         access_token: token
-    //     });
-    //     return true;
-    // }
     signIn(code) {
         return __awaiter(this, void 0, void 0, function* () {
             // 認証情報を取得できればログイン成功
@@ -97,8 +80,9 @@ class User {
                 .expire(`token.${this.userId}`, EXPIRES_IN_SECONDS, debug)
                 .exec();
             debug('results:', results);
-            const payload = credentials.access_token.split('.')[1];
-            this.setCredentials(JSON.parse(atob(payload)), credentials.access_token);
+            const payload = jwt.decode(credentials.access_token);
+            debug('payload:', payload);
+            this.setCredentials(payload, credentials.access_token);
             return this;
         });
     }
