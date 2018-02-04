@@ -1,14 +1,8 @@
 import * as ssktsapi from '@motionpicture/sskts-api-nodejs-client';
 import * as createDebug from 'debug';
 import * as redis from 'ioredis';
-import * as jwt from 'jsonwebtoken';
-// tslint:disable-next-line:no-require-imports no-var-requires
-const jwkToPem = require('jwk-to-pem');
-import * as request from 'request-promise-native';
 
 const debug = createDebug('sskts-line-ticket:user');
-const ISSUER = <string>process.env.API_TOKEN_ISSUER;
-let pems: IPems;
 
 const redisClient = new redis({
     host: <string>process.env.REDIS_HOST,
@@ -89,7 +83,6 @@ export default class User {
     public state: string;
     public userId: string;
     public payload: IPayload;
-    public scopes: string[];
     public accessToken: string;
     public authClient: ssktsapi.auth.OAuth2;
 
@@ -119,31 +112,49 @@ export default class User {
         return this.authClient.generateLogoutUrl();
     }
 
-    public async isAuthenticated() {
-        const token = await redisClient.get(`token.${this.userId}`);
-        if (token === null) {
-            return false;
-        }
+    public async getToken(): Promise<string | null> {
+        return redisClient.get(`token.${this.userId}`);
+    }
 
-        const payload = await validateToken(token, {
-            issuer: ISSUER,
-            tokenUse: 'access' // access tokenのみ受け付ける
-        });
-        debug('verified! payload:', payload);
+    public setCredentials(payload: IPayload, token: string) {
         this.payload = payload;
-        this.scopes = (typeof payload.scope === 'string') ? payload.scope.split((' ')) : [];
         this.accessToken = token;
         this.authClient.setCredentials({
             access_token: token
         });
 
-        return true;
+        return this;
     }
+
+    // public async isAuthenticated() {
+    //     const token = await redisClient.get(`token.${this.userId}`);
+    //     if (token === null) {
+    //         return false;
+    //     }
+
+    //     const payload = await validateToken(token, {
+    //         issuer: ISSUER,
+    //         tokenUse: 'access' // access tokenのみ受け付ける
+    //     });
+    //     debug('verified! payload:', payload);
+    //     // this.payload = payload;
+    //     // this.scopes = (typeof payload.scope === 'string') ? payload.scope.split((' ')) : [];
+    //     this.accessToken = token;
+    //     this.authClient.setCredentials({
+    //         access_token: token
+    //     });
+
+    //     return true;
+    // }
 
     public async signIn(code: string) {
         // 認証情報を取得できればログイン成功
         const credentials = await this.authClient.getToken(code, <string>process.env.API_CODE_VERIFIER);
         debug('credentials published', credentials);
+
+        if (credentials.access_token === undefined) {
+            throw new Error('Access token is required for credentials.');
+        }
 
         // ログイン状態を保持
         const results = await redisClient.multi()
@@ -152,7 +163,10 @@ export default class User {
             .exec();
         debug('results:', results);
 
-        return credentials;
+        const payload = credentials.access_token.split('.')[1];
+        this.setCredentials(JSON.parse(atob(payload)), credentials.access_token);
+
+        return this;
     }
 
     public async logout() {
@@ -171,86 +185,4 @@ export default class User {
             .expire(`transaction.${this.userId}`, EXPIRES_IN_SECONDS, debug)
             .exec();
     }
-}
-
-export const URI_OPENID_CONFIGURATION = '/.well-known/openid-configuration';
-async function createPems(issuer: string) {
-    const openidConfiguration: IOpenIdConfiguration = await request({
-        url: `${issuer}${URI_OPENID_CONFIGURATION}`,
-        json: true
-    }).then((body) => body);
-
-    return request({
-        url: openidConfiguration.jwks_uri,
-        json: true
-    }).then((body) => {
-        debug('got jwks_uri', body);
-        const pemsByKid: IPems = {};
-        (<any[]>body.keys).forEach((key) => {
-            pemsByKid[key.kid] = jwkToPem(key);
-        });
-
-        return pemsByKid;
-    });
-}
-
-/**
- * トークンを検証する
- */
-async function validateToken(token: string, verifyOptions: {
-    issuer: string;
-    tokenUse?: string;
-}): Promise<IPayload> {
-    debug('validating token...', token);
-    const decodedJwt = <any>jwt.decode(token, { complete: true });
-    if (!decodedJwt) {
-        throw new Error('Not a valid JWT token.');
-    }
-    debug('decodedJwt:', decodedJwt);
-
-    // audienceをチェック
-    // if (decodedJwt.payload.aud !== AUDIENCE) {
-    //     throw new Error('invalid audience');
-    // }
-
-    // tokenUseが期待通りでなければ拒否
-    // tslint:disable-next-line:no-single-line-block-comment
-    /* istanbul ignore else */
-    if (verifyOptions.tokenUse !== undefined) {
-        if (decodedJwt.payload.token_use !== verifyOptions.tokenUse) {
-            throw new Error(`Not a ${verifyOptions.tokenUse}.`);
-        }
-    }
-
-    // 公開鍵未取得であればcognitoから取得
-    if (pems === undefined) {
-        pems = await createPems(verifyOptions.issuer);
-    }
-
-    // トークンからkidを取り出して、対応するPEMを検索
-    const pem = pems[decodedJwt.header.kid];
-    if (pem === undefined) {
-        throw new Error('Invalid access token.');
-    }
-
-    // 対応PEMがあればトークンを検証
-    return new Promise<IPayload>((resolve, reject) => {
-        jwt.verify(
-            token,
-            pem,
-            {
-                issuer: ISSUER // 期待しているユーザープールで発行されたJWTトークンかどうか確認
-                // audience: pemittedAudiences
-            },
-            (err, payload) => {
-                if (err !== null) {
-                    reject(err);
-                } else {
-                    // Always generate the policy on value of 'sub' claim and not for 'username' because username is reassignable
-                    // sub is UUID for a user which is never reassigned to another user
-                    resolve(<IPayload>payload);
-                }
-            }
-        );
-    });
 }

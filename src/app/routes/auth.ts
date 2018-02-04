@@ -29,7 +29,6 @@ authRouter.get(
             });
 
             await user.signIn(req.query.code);
-            await user.isAuthenticated();
             await LINE.pushMessage(event.source.userId, `Signed in. ${user.payload.username}`);
 
             // イベントを強制的に再送信

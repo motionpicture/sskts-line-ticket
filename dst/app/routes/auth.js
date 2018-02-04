@@ -32,7 +32,6 @@ authRouter.get('/signIn', (req, res, next) => __awaiter(this, void 0, void 0, fu
             state: req.query.state
         });
         yield user.signIn(req.query.code);
-        yield user.isAuthenticated();
         yield LINE.pushMessage(event.source.userId, `Signed in. ${user.payload.username}`);
         // イベントを強制的に再送信
         try {

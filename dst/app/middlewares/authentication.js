@@ -13,6 +13,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const express_middleware_1 = require("@motionpicture/express-middleware");
 const sskts = require("@motionpicture/sskts-domain");
 const http_status_1 = require("http-status");
 const request = require("request-promise-native");
@@ -39,7 +40,6 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
             next();
             return;
         }
-        // RedisからBearerトークンを取り出す
         const event = (req.body.events !== undefined) ? req.body.events[0] : undefined;
         if (event === undefined) {
             throw new Error('Invalid request.');
@@ -50,18 +50,42 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
             userId: userId,
             state: JSON.stringify(req.body)
         });
-        if (yield req.user.isAuthenticated()) {
-            next();
-            return;
-        }
-        // ログインボタンを送信
+        // RedisからBearerトークンを取り出す
+        express_middleware_1.cognitoAuth({
+            issuers: [process.env.API_TOKEN_ISSUER],
+            authorizedHandler: (user, token) => __awaiter(this, void 0, void 0, function* () {
+                // ログイン状態をセットしてnext
+                req.user.setCredentials(user, token);
+                // await req.user.isAuthenticated();
+                next();
+            }),
+            unauthorizedHandler: () => __awaiter(this, void 0, void 0, function* () {
+                // ログインボタンを送信
+                yield sendLoginButton(req.user);
+                res.status(http_status_1.OK).send('ok');
+            }),
+            tokenDetecter: () => __awaiter(this, void 0, void 0, function* () {
+                const token = yield req.user.getToken();
+                if (token === null) {
+                    throw new sskts.factory.errors.Unauthorized();
+                }
+                return token;
+            })
+        });
+    }
+    catch (error) {
+        next(new sskts.factory.errors.Unauthorized(error.message));
+    }
+});
+function sendLoginButton(user) {
+    return __awaiter(this, void 0, void 0, function* () {
         yield request.post({
             simple: false,
             url: LINE.URL_PUSH_MESSAGE,
             auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
             json: true,
             body: {
-                to: userId,
+                to: user.userId,
                 messages: [
                     {
                         type: 'template',
@@ -73,7 +97,7 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
                                 {
                                     type: 'uri',
                                     label: 'Sign In',
-                                    uri: req.user.generateAuthUrl()
+                                    uri: user.generateAuthUrl()
                                 }
                             ]
                         }
@@ -81,9 +105,6 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
                 ]
             }
         }).promise();
-        res.status(http_status_1.OK).send('ok');
-    }
-    catch (error) {
-        next(new sskts.factory.errors.Unauthorized(error.message));
-    }
-});
+    });
+}
+exports.sendLoginButton = sendLoginButton;
