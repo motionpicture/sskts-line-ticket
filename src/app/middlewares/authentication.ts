@@ -49,7 +49,7 @@ export default async (req: Request, res: Response, next: NextFunction) => {
         });
 
         // RedisからBearerトークンを取り出す
-        cognitoAuth({
+        await cognitoAuth({
             issuers: [<string>process.env.API_TOKEN_ISSUER],
             authorizedHandler: async (user, token) => {
                 // ログイン状態をセットしてnext
@@ -70,7 +70,7 @@ export default async (req: Request, res: Response, next: NextFunction) => {
 
                 return token;
             }
-        });
+        })(req, res, next);
     } catch (error) {
         next(new sskts.factory.errors.Unauthorized(error.message));
     }

@@ -51,7 +51,7 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
             state: JSON.stringify(req.body)
         });
         // RedisからBearerトークンを取り出す
-        express_middleware_1.cognitoAuth({
+        yield express_middleware_1.cognitoAuth({
             issuers: [process.env.API_TOKEN_ISSUER],
             authorizedHandler: (user, token) => __awaiter(this, void 0, void 0, function* () {
                 // ログイン状態をセットしてnext
@@ -71,7 +71,7 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
                 }
                 return token;
             })
-        });
+        })(req, res, next);
     }
     catch (error) {
         next(new sskts.factory.errors.Unauthorized(error.message));
