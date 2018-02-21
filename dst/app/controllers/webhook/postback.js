@@ -252,8 +252,11 @@ function choosePaymentMethod(user, paymentMethod, transactionId) {
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
         });
-        const actionRepo = new sskts.repository.action.authorize.SeatReservation(sskts.mongoose.connection);
-        const seatReservations = yield actionRepo.findByTransactionId(transactionId);
+        const actionRepo = new sskts.repository.Action(sskts.mongoose.connection);
+        let seatReservations = yield actionRepo.findAuthorizeByTransactionId(transactionId);
+        seatReservations = seatReservations
+            .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
+            .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.authorizeActionPurpose.SeatReservation);
         const price = seatReservations[0].result.price;
         const pecorinoAuthorization = yield placeOrderService.createPecorinoAuthorization({
             transactionId: transactionId,

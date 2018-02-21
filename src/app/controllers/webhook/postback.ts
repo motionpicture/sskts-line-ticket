@@ -257,8 +257,11 @@ export async function choosePaymentMethod(user: User, paymentMethod: string, tra
         auth: user.authClient
     });
 
-    const actionRepo = new sskts.repository.action.authorize.SeatReservation(sskts.mongoose.connection);
-    const seatReservations = await actionRepo.findByTransactionId(transactionId);
+    const actionRepo = new sskts.repository.Action(sskts.mongoose.connection);
+    let seatReservations = await actionRepo.findAuthorizeByTransactionId(transactionId);
+    seatReservations = seatReservations
+        .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
+        .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.authorizeActionPurpose.SeatReservation);
     const price = seatReservations[0].result.price;
 
     const pecorinoAuthorization = await placeOrderService.createPecorinoAuthorization({
