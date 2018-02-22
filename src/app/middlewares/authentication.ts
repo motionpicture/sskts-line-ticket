@@ -71,6 +71,22 @@ export default async (req: Request, res: Response, next: NextFunction) => {
 };
 
 export async function sendLoginButton(user: User) {
+    const refreshToken = await user.getRefreshToken();
+    const actions: any[] = [
+        {
+            type: 'uri',
+            label: 'Sign In',
+            uri: user.generateAuthUrl()
+        }
+    ];
+    if (refreshToken !== null) {
+        actions.push({
+            type: 'postback',
+            label: 'Face Login',
+            data: 'action=loginByFace'
+        });
+    }
+
     await request.post({
         simple: false,
         url: LINE.URL_PUSH_MESSAGE,
@@ -84,19 +100,8 @@ export async function sendLoginButton(user: User) {
                     altText: 'ログインボタン',
                     template: {
                         type: 'buttons',
-                        text: 'ログインしてください。',
-                        actions: [
-                            {
-                                type: 'uri',
-                                label: 'Sign In',
-                                uri: user.generateAuthUrl()
-                            },
-                            {
-                                type: 'postback',
-                                label: 'Face Login',
-                                data: 'action=loginByFace'
-                            }
-                        ]
+                        text: 'ログインしてください。一度ログインすると、次回からFace Loginを使用できます。',
+                        actions: actions
                     }
                 }
             ]

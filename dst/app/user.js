@@ -26,7 +26,8 @@ if (USER_EXPIRES_IN_SECONDS === undefined) {
 }
 // tslint:disable-next-line:no-magic-numbers
 const EXPIRES_IN_SECONDS = parseInt(USER_EXPIRES_IN_SECONDS, 10);
-const YEAR = 31536000;
+// const REFRESH_TOKEN_EXPIRES_IN_SECONDS = 31536000;
+const REFRESH_TOKEN_EXPIRES_IN_SECONDS = 300;
 /**
  * LINEユーザー
  * @class
@@ -95,7 +96,7 @@ class User {
             // リフレッシュトークンを保管
             yield redisClient.multi()
                 .set(`line-ticket.refreshToken.${this.userId}`, credentials.refresh_token)
-                .expire(`line-ticket.refreshToken.${this.userId}`, YEAR, debug)
+                .expire(`line-ticket.refreshToken.${this.userId}`, REFRESH_TOKEN_EXPIRES_IN_SECONDS, debug)
                 .exec();
             debug('refresh token saved.');
             this.setCredentials(Object.assign({}, credentials, { access_token: credentials.access_token }));

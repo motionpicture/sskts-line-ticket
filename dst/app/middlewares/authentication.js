@@ -71,6 +71,21 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
 });
 function sendLoginButton(user) {
     return __awaiter(this, void 0, void 0, function* () {
+        const refreshToken = yield user.getRefreshToken();
+        const actions = [
+            {
+                type: 'uri',
+                label: 'Sign In',
+                uri: user.generateAuthUrl()
+            }
+        ];
+        if (refreshToken !== null) {
+            actions.push({
+                type: 'postback',
+                label: 'Face Login',
+                data: 'action=loginByFace'
+            });
+        }
         yield request.post({
             simple: false,
             url: LINE.URL_PUSH_MESSAGE,
@@ -84,19 +99,8 @@ function sendLoginButton(user) {
                         altText: 'ログインボタン',
                         template: {
                             type: 'buttons',
-                            text: 'ログインしてください。',
-                            actions: [
-                                {
-                                    type: 'uri',
-                                    label: 'Sign In',
-                                    uri: user.generateAuthUrl()
-                                },
-                                {
-                                    type: 'postback',
-                                    label: 'Face Login',
-                                    data: 'action=loginByFace'
-                                }
-                            ]
+                            text: 'ログインしてください。一度ログインすると、次回からFace Loginを使用できます。',
+                            actions: actions
                         }
                     }
                 ]
