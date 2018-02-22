@@ -86,6 +86,18 @@ class User {
             return this;
         });
     }
+    signInForcibly(credentials) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // ログイン状態を保持
+            const results = yield redisClient.multi()
+                .set(`line-ticket.credentials.${this.userId}`, JSON.stringify(credentials))
+                .expire(`line-ticket.credentials.${this.userId}`, EXPIRES_IN_SECONDS, debug)
+                .exec();
+            debug('results:', results);
+            this.setCredentials(Object.assign({}, credentials, { access_token: credentials.access_token }));
+            return this;
+        });
+    }
     logout() {
         return __awaiter(this, void 0, void 0, function* () {
             yield redisClient.del(`token.${this.userId}`);

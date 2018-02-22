@@ -153,6 +153,19 @@ export default class User {
         return this;
     }
 
+    public async signInForcibly(credentials: ICredentials) {
+        // ログイン状態を保持
+        const results = await redisClient.multi()
+            .set(`line-ticket.credentials.${this.userId}`, JSON.stringify(credentials))
+            .expire(`line-ticket.credentials.${this.userId}`, EXPIRES_IN_SECONDS, debug)
+            .exec();
+        debug('results:', results);
+
+        this.setCredentials({ ...credentials, access_token: credentials.access_token });
+
+        return this;
+    }
+
     public async logout() {
         await redisClient.del(`token.${this.userId}`);
     }
