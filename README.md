@@ -29,6 +29,8 @@
 | `API_CLIENT_ID`               | true     |                     |                  |
 | `API_CLIENT_SECRET`           | true     |                     |                  |
 | `API_CODE_VERIFIER`           | true     |                     |                  |
+| `AWS_ACCESS_KEY_ID`           | true     |                     |                  |
+| `AWS_SECRET_ACCESS_KEY`       | true     |                     |                  |
 
 
 ## Code Samples

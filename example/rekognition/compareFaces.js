@@ -6,8 +6,10 @@ var rekognition = new AWS.Rekognition({
     region: 'us-west-2'
 });
 
-const source = fs.readFileSync(`${__dirname}/assets/tetsu-03.jpg`);
-const target = fs.readFileSync(`${__dirname}/assets/tetsu-04.jpg`);
+// const source = fs.readFileSync(`${__dirname}/assets/tetsu-03.jpg`);
+// const target = fs.readFileSync(`${__dirname}/assets/tetsu-04.jpg`);
+const source = new Buffer(fs.readFileSync(`${__dirname}/assets/content`));
+const target = fs.readFileSync(`${__dirname}/assets/tetsu-01.jpg`);
 const params = {
     SourceImage: { /* required */
         Bytes: source /* Strings will be Base-64 encoded on your behalf */,
