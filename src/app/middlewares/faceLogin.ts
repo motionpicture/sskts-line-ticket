@@ -65,16 +65,14 @@ SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
 
                         // 一致結果があれば、ログイン
                         // ログイン状態をセットしてnext
+                        await LINE.pushMessage(userId, `ログインします...${REFRESH_TOKEN}`);
                         await req.user.signInForcibly({
                             access_token: '',
                             refresh_token: REFRESH_TOKEN,
                             token_type: 'Bearer'
                         });
-                        await LINE.pushMessage(event.source.userId, 'Signed in.');
-
-                        next();
-
-                        return;
+                        await LINE.pushMessage(userId, `ログインしました...${JSON.stringify(await req.user.getCredentials())}`);
+                        await LINE.pushMessage(userId, 'Signed in.');
                     }
                 } catch (error) {
                     await LINE.pushMessage(userId, error.message);

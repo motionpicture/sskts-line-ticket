@@ -66,14 +66,14 @@ SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
     `);
                         // 一致結果があれば、ログイン
                         // ログイン状態をセットしてnext
+                        yield LINE.pushMessage(userId, `ログインします...${REFRESH_TOKEN}`);
                         yield req.user.signInForcibly({
                             access_token: '',
                             refresh_token: REFRESH_TOKEN,
                             token_type: 'Bearer'
                         });
-                        yield LINE.pushMessage(event.source.userId, 'Signed in.');
-                        next();
-                        return;
+                        yield LINE.pushMessage(userId, `ログインしました...${JSON.stringify(yield req.user.getCredentials())}`);
+                        yield LINE.pushMessage(userId, 'Signed in.');
                     }
                 }
                 catch (error) {
