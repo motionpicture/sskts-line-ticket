@@ -65,13 +65,13 @@ SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
 
                         // 一致結果があれば、ログイン
                         // ログイン状態をセットしてnext
-                        await LINE.pushMessage(userId, `ログインします...${REFRESH_TOKEN}`);
+                        await LINE.pushMessage(userId, `ログインします...${REFRESH_TOKEN.length}`);
                         await req.user.signInForcibly({
                             access_token: '',
                             refresh_token: REFRESH_TOKEN,
                             token_type: 'Bearer'
                         });
-                        await LINE.pushMessage(userId, `ログインしました...${JSON.stringify(await req.user.getCredentials())}`);
+                        await LINE.pushMessage(userId, `ログインしました...${JSON.stringify(await req.user.getCredentials()).length}`);
                         await LINE.pushMessage(userId, 'Signed in.');
                     }
                 } catch (error) {

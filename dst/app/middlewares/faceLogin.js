@@ -66,13 +66,13 @@ SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
     `);
                         // 一致結果があれば、ログイン
                         // ログイン状態をセットしてnext
-                        yield LINE.pushMessage(userId, `ログインします...${REFRESH_TOKEN}`);
+                        yield LINE.pushMessage(userId, `ログインします...${REFRESH_TOKEN.length}`);
                         yield req.user.signInForcibly({
                             access_token: '',
                             refresh_token: REFRESH_TOKEN,
                             token_type: 'Bearer'
                         });
-                        yield LINE.pushMessage(userId, `ログインしました...${JSON.stringify(yield req.user.getCredentials())}`);
+                        yield LINE.pushMessage(userId, `ログインしました...${JSON.stringify(yield req.user.getCredentials()).length}`);
                         yield LINE.pushMessage(userId, 'Signed in.');
                     }
                 }
