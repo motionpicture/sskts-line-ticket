@@ -167,7 +167,7 @@ export default class User {
     }
 
     public async logout() {
-        await redisClient.del(`token.${this.userId}`);
+        await redisClient.del(`line-ticket.credentials.${this.userId}`);
     }
 
     public async findTransaction() {
