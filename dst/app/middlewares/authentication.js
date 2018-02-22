@@ -21,11 +21,6 @@ const LINE = require("../../line");
 const user_1 = require("../user");
 exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     try {
-        // ユーザー認証無効化の設定の場合
-        if (process.env.USER_AUTHENTICATION_DISABLED === '1') {
-            next();
-            return;
-        }
         const event = (req.body.events !== undefined) ? req.body.events[0] : undefined;
         if (event === undefined) {
             throw new Error('Invalid request.');
@@ -36,6 +31,17 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
             userId: userId,
             state: JSON.stringify(req.body)
         });
+        // ユーザー認証無効化の設定の場合
+        if (process.env.USER_REFRESH_TOKEN !== undefined) {
+            // ログイン状態をセットしてnext
+            req.user.setCredentials({
+                access_token: '',
+                refresh_token: process.env.USER_REFRESH_TOKEN,
+                token_type: 'Bearer'
+            });
+            next();
+            return;
+        }
         const credentials = yield req.user.getCredentials();
         if (credentials === null) {
             // ログインボタンを送信
@@ -84,6 +90,11 @@ function sendLoginButton(user) {
                                     type: 'uri',
                                     label: 'Sign In',
                                     uri: user.generateAuthUrl()
+                                },
+                                {
+                                    type: 'postback',
+                                    label: 'Face Login',
+                                    data: 'action=loginByFace'
                                 }
                             ]
                         }

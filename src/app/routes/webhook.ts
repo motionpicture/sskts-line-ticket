@@ -10,12 +10,14 @@ import { OK } from 'http-status';
 import * as LINE from '../../line';
 import * as WebhookController from '../controllers/webhook';
 import authentication from '../middlewares/authentication';
+import faceLogin from '../middlewares/faceLogin';
 
 const webhookRouter = express.Router();
 const debug = createDebug('sskts-line-ticket:router:webhook');
 
 webhookRouter.all(
     '/',
+    faceLogin,
     authentication,
     async (req, res) => {
         debug('body:', JSON.stringify(req.body));

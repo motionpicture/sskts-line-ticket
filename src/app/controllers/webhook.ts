@@ -107,6 +107,11 @@ export async function postback(event: LINE.IWebhookEvent, user: User) {
                 await PostbackController.confirmOrder(user, <string>data.transactionId);
                 break;
 
+            // face login
+            // case 'loginByFace':
+            //     await PostbackController.loginByFace(user, <string>data.transactionId);
+            //     break;
+
             default:
         }
     } catch (error) {
