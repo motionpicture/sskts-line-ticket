@@ -15,7 +15,6 @@ const sskts = require("@motionpicture/sskts-domain");
 const AWS = require("aws-sdk");
 const http_status_1 = require("http-status");
 const querystring = require("querystring");
-const request = require("request-promise-native");
 const LINE = require("../../line");
 const user_1 = require("../user");
 exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
@@ -44,7 +43,7 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
             if (event.message.type === 'image') {
                 yield LINE.pushMessage(userId, `これは写真です。${event.message.id}`);
                 yield LINE.pushMessage(userId, 'getting content...');
-                const content = yield getImage(event.message.id);
+                const content = yield LINE.getContent(event.message.id);
                 yield LINE.pushMessage(userId, `typeof content: ${typeof content}`);
                 yield LINE.pushMessage(userId, `content.length: ${content.length}`);
                 try {
@@ -92,17 +91,6 @@ SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
         next(new sskts.factory.errors.Unauthorized(error.message));
     }
 });
-function getImage(messageId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return request.get({
-            encoding: null,
-            simple: false,
-            url: `https://api.line.me/v2/bot/message/${messageId}/content`,
-            auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN }
-        }).promise();
-    });
-}
-exports.getImage = getImage;
 function searchFacesByImage(source) {
     return __awaiter(this, void 0, void 0, function* () {
         // 以下環境変数をセットすること

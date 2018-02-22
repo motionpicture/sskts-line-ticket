@@ -12,6 +12,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var MessageType;
+(function (MessageType) {
+    MessageType["text"] = "text";
+    MessageType["image"] = "image";
+    MessageType["video"] = "video";
+    MessageType["audio"] = "audio";
+    MessageType["file"] = "file";
+    MessageType["location"] = "location";
+    MessageType["sticker"] = "sticker";
+})(MessageType = exports.MessageType || (exports.MessageType = {}));
 const createDebug = require("debug");
 const request = require("request-promise-native");
 const debug = createDebug('sskts-line-ticket:controller:line');
@@ -46,3 +56,18 @@ function pushMessage(userId, text) {
     });
 }
 exports.pushMessage = pushMessage;
+/**
+ * メッセージIDからユーザーが送信した画像、動画、および音声のデータを取得する
+ * @param messageId メッセージID
+ */
+function getContent(messageId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return request.get({
+            encoding: null,
+            simple: false,
+            url: `https://api.line.me/v2/bot/message/${messageId}/content`,
+            auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN }
+        }).promise();
+    });
+}
+exports.getContent = getContent;

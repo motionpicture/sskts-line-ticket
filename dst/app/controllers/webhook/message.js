@@ -45,6 +45,11 @@ Pecorino取引履歴検索
 '口座取引履歴'と入力
 
 --------------------
+顔写真登録
+--------------------
+'顔写真登録'と入力
+
+--------------------
 logout
 --------------------
 'logout'と入力
@@ -53,6 +58,16 @@ logout
     });
 }
 exports.pushHowToUse = pushHowToUse;
+/**
+ * 顔写真登録を開始する
+ */
+function startIndexingFace(userId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const text = '顔写真を送信してください。';
+        yield LINE.pushMessage(userId, text);
+    });
+}
+exports.startIndexingFace = startIndexingFace;
 /**
  * 予約番号or電話番号のボタンを送信する
  * @export

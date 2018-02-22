@@ -72,6 +72,7 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
 function sendLoginButton(user) {
     return __awaiter(this, void 0, void 0, function* () {
         const refreshToken = yield user.getRefreshToken();
+        let text = 'ログインしてください。一度ログイン後、顔写真を登録すると、次回からFace Loginを使用できます。';
         const actions = [
             {
                 type: 'uri',
@@ -80,6 +81,7 @@ function sendLoginButton(user) {
             }
         ];
         if (refreshToken !== null) {
+            text = 'ログインしてください。';
             actions.push({
                 type: 'postback',
                 label: 'Face Login',
@@ -99,7 +101,7 @@ function sendLoginButton(user) {
                         altText: 'ログインボタン',
                         template: {
                             type: 'buttons',
-                            text: 'ログインしてください。一度ログインすると、次回からFace Loginを使用できます。',
+                            text: text,
                             actions: actions
                         }
                     }

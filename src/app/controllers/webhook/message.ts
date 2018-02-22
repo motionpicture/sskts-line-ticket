@@ -39,10 +39,24 @@ Pecorino取引履歴検索
 '口座取引履歴'と入力
 
 --------------------
+顔写真登録
+--------------------
+'顔写真登録'と入力
+
+--------------------
 logout
 --------------------
 'logout'と入力
 `;
+
+    await LINE.pushMessage(userId, text);
+}
+
+/**
+ * 顔写真登録を開始する
+ */
+export async function startIndexingFace(userId: string) {
+    const text = '顔写真を送信してください。';
 
     await LINE.pushMessage(userId, text);
 }

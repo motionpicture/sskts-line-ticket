@@ -9,6 +9,7 @@ import * as querystring from 'querystring';
 import * as LINE from '../../line';
 import User from '../user';
 import * as MessageController from './webhook/message';
+import * as ImageMessageController from './webhook/message/image';
 import * as PostbackController from './webhook/postback';
 
 const debug = createDebug('sskts-line-ticket:controller:webhook');
@@ -17,50 +18,72 @@ const debug = createDebug('sskts-line-ticket:controller:webhook');
  * メッセージが送信されたことを示すEvent Objectです。
  */
 export async function message(event: LINE.IWebhookEvent, user: User) {
-    const messageText: string = event.message.text;
     const userId = event.source.userId;
 
     try {
-        switch (true) {
-            // [購入番号]で検索
-            case /^\d{6}$/.test(messageText):
-                await MessageController.askReservationEventDate(userId, messageText);
+        if (event.message === undefined) {
+            throw new Error('event.message not found.');
+        }
+
+        switch (event.message.type) {
+            case LINE.MessageType.text:
+                const messageText = <string>event.message.text;
+
+                switch (true) {
+                    // [購入番号]で検索
+                    case /^\d{6}$/.test(messageText):
+                        await MessageController.askReservationEventDate(userId, messageText);
+                        break;
+
+                    // ログアウト
+                    case /^logout$/.test(messageText):
+                        await MessageController.logout(user);
+                        break;
+
+                    // 取引csv要求
+                    case /^csv$/.test(messageText):
+                        await MessageController.askFromWhenAndToWhen(userId);
+                        break;
+
+                    // 取引csv期間指定
+                    case /^\d{8}-\d{8}$/.test(messageText):
+                        // tslint:disable-next-line:no-magic-numbers
+                        await MessageController.publishURI4transactionsCSV(userId, messageText.substr(0, 8), messageText.substr(9, 8));
+                        break;
+
+                    // 取引csv期間指定
+                    case /予約/.test(messageText):
+                        await MessageController.askEventStartDate(userId);
+                        break;
+
+                    // 残高照会
+                    case /残高/.test(messageText):
+                        await MessageController.findAccount(user);
+                        break;
+
+                    // 口座取引履歴
+                    case /口座取引履歴/.test(messageText):
+                        await MessageController.searchAccountTradeActions(user);
+                        break;
+
+                    // 顔写真登録
+                    case /^顔写真登録$/.test(messageText):
+                        await MessageController.startIndexingFace(userId);
+                        break;
+
+                    default:
+                        // 予約照会方法をアドバイス
+                        await MessageController.pushHowToUse(userId);
+                }
+
                 break;
 
-            // ログアウト
-            case /^logout$/.test(messageText):
-                await MessageController.logout(user);
-                break;
+            case LINE.MessageType.image:
+                await ImageMessageController.indexFace(user, event.message.id);
 
-            // 取引csv要求
-            case /^csv$/.test(messageText):
-                await MessageController.askFromWhenAndToWhen(userId);
-                break;
-
-            // 取引csv期間指定
-            case /^\d{8}-\d{8}$/.test(messageText):
-                // tslint:disable-next-line:no-magic-numbers
-                await MessageController.publishURI4transactionsCSV(userId, messageText.substr(0, 8), messageText.substr(9, 8));
-                break;
-
-            // 取引csv期間指定
-            case /予約/.test(messageText):
-                await MessageController.askEventStartDate(userId);
-                break;
-
-            // 残高照会
-            case /残高/.test(messageText):
-                await MessageController.findAccount(user);
-                break;
-
-            // 口座取引履歴
-            case /口座取引履歴/.test(messageText):
-                await MessageController.searchAccountTradeActions(user);
                 break;
 
             default:
-                // 予約照会方法をアドバイス
-                await MessageController.pushHowToUse(userId);
         }
     } catch (error) {
         // エラーメッセージ表示

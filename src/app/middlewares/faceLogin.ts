@@ -7,7 +7,6 @@ import * as AWS from 'aws-sdk';
 import { NextFunction, Request, Response } from 'express';
 import { OK } from 'http-status';
 import * as querystring from 'querystring';
-import * as request from 'request-promise-native';
 
 import * as LINE from '../../line';
 import User from '../user';
@@ -42,7 +41,7 @@ export default async (req: Request, res: Response, next: NextFunction) => {
             if (event.message.type === 'image') {
                 await LINE.pushMessage(userId, `これは写真です。${event.message.id}`);
                 await LINE.pushMessage(userId, 'getting content...');
-                const content = await getImage(event.message.id);
+                const content = await LINE.getContent(event.message.id);
                 await LINE.pushMessage(userId, `typeof content: ${typeof content}`);
                 await LINE.pushMessage(userId, `content.length: ${content.length}`);
 
@@ -90,15 +89,6 @@ SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
         next(new sskts.factory.errors.Unauthorized(error.message));
     }
 };
-
-export async function getImage(messageId: string) {
-    return request.get({
-        encoding: null,
-        simple: false,
-        url: `https://api.line.me/v2/bot/message/${messageId}/content`,
-        auth: { bearer: <string>process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN }
-    }).promise();
-}
 
 export async function searchFacesByImage(source: Buffer) {
     // 以下環境変数をセットすること

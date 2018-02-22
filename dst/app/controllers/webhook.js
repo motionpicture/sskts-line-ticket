@@ -16,6 +16,7 @@ const createDebug = require("debug");
 const querystring = require("querystring");
 const LINE = require("../../line");
 const MessageController = require("./webhook/message");
+const ImageMessageController = require("./webhook/message/image");
 const PostbackController = require("./webhook/postback");
 const debug = createDebug('sskts-line-ticket:controller:webhook');
 /**
@@ -23,42 +24,57 @@ const debug = createDebug('sskts-line-ticket:controller:webhook');
  */
 function message(event, user) {
     return __awaiter(this, void 0, void 0, function* () {
-        const messageText = event.message.text;
         const userId = event.source.userId;
         try {
-            switch (true) {
-                // [購入番号]で検索
-                case /^\d{6}$/.test(messageText):
-                    yield MessageController.askReservationEventDate(userId, messageText);
+            if (event.message === undefined) {
+                throw new Error('event.message not found.');
+            }
+            switch (event.message.type) {
+                case LINE.MessageType.text:
+                    const messageText = event.message.text;
+                    switch (true) {
+                        // [購入番号]で検索
+                        case /^\d{6}$/.test(messageText):
+                            yield MessageController.askReservationEventDate(userId, messageText);
+                            break;
+                        // ログアウト
+                        case /^logout$/.test(messageText):
+                            yield MessageController.logout(user);
+                            break;
+                        // 取引csv要求
+                        case /^csv$/.test(messageText):
+                            yield MessageController.askFromWhenAndToWhen(userId);
+                            break;
+                        // 取引csv期間指定
+                        case /^\d{8}-\d{8}$/.test(messageText):
+                            // tslint:disable-next-line:no-magic-numbers
+                            yield MessageController.publishURI4transactionsCSV(userId, messageText.substr(0, 8), messageText.substr(9, 8));
+                            break;
+                        // 取引csv期間指定
+                        case /予約/.test(messageText):
+                            yield MessageController.askEventStartDate(userId);
+                            break;
+                        // 残高照会
+                        case /残高/.test(messageText):
+                            yield MessageController.findAccount(user);
+                            break;
+                        // 口座取引履歴
+                        case /口座取引履歴/.test(messageText):
+                            yield MessageController.searchAccountTradeActions(user);
+                            break;
+                        // 顔写真登録
+                        case /^顔写真登録$/.test(messageText):
+                            yield MessageController.startIndexingFace(userId);
+                            break;
+                        default:
+                            // 予約照会方法をアドバイス
+                            yield MessageController.pushHowToUse(userId);
+                    }
                     break;
-                // ログアウト
-                case /^logout$/.test(messageText):
-                    yield MessageController.logout(user);
-                    break;
-                // 取引csv要求
-                case /^csv$/.test(messageText):
-                    yield MessageController.askFromWhenAndToWhen(userId);
-                    break;
-                // 取引csv期間指定
-                case /^\d{8}-\d{8}$/.test(messageText):
-                    // tslint:disable-next-line:no-magic-numbers
-                    yield MessageController.publishURI4transactionsCSV(userId, messageText.substr(0, 8), messageText.substr(9, 8));
-                    break;
-                // 取引csv期間指定
-                case /予約/.test(messageText):
-                    yield MessageController.askEventStartDate(userId);
-                    break;
-                // 残高照会
-                case /残高/.test(messageText):
-                    yield MessageController.findAccount(user);
-                    break;
-                // 口座取引履歴
-                case /口座取引履歴/.test(messageText):
-                    yield MessageController.searchAccountTradeActions(user);
+                case LINE.MessageType.image:
+                    yield ImageMessageController.indexFace(user, event.message.id);
                     break;
                 default:
-                    // 予約照会方法をアドバイス
-                    yield MessageController.pushHowToUse(userId);
             }
         }
         catch (error) {

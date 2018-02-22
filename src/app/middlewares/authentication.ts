@@ -72,6 +72,7 @@ export default async (req: Request, res: Response, next: NextFunction) => {
 
 export async function sendLoginButton(user: User) {
     const refreshToken = await user.getRefreshToken();
+    let text = 'ログインしてください。一度ログイン後、顔写真を登録すると、次回からFace Loginを使用できます。';
     const actions: any[] = [
         {
             type: 'uri',
@@ -80,6 +81,7 @@ export async function sendLoginButton(user: User) {
         }
     ];
     if (refreshToken !== null) {
+        text = 'ログインしてください。';
         actions.push({
             type: 'postback',
             label: 'Face Login',
@@ -100,7 +102,7 @@ export async function sendLoginButton(user: User) {
                     altText: 'ログインボタン',
                     template: {
                         type: 'buttons',
-                        text: 'ログインしてください。一度ログインすると、次回からFace Loginを使用できます。',
+                        text: text,
                         actions: actions
                     }
                 }
