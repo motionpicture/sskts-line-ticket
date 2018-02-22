@@ -25,6 +25,14 @@ export default async (req: Request, res: Response, next: NextFunction) => {
             state: JSON.stringify(req.body)
         });
 
+        // ログイン済であれば次へ
+        const credentials = await req.user.getCredentials();
+        if (credentials !== null) {
+            next();
+
+            return;
+        }
+
         // face loginイベントであれば、メッセージを送信
         if (event.type === 'postback' && event.postback !== undefined) {
             const data = querystring.parse(event.postback.data);
@@ -69,8 +77,7 @@ SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
                                 refresh_token: refreshToken,
                                 token_type: 'Bearer'
                             });
-                            const credentials = await req.user.authClient.refreshAccessToken();
-                            await req.user.signInForcibly(<any>credentials);
+                            await req.user.signInForcibly(<any>await req.user.authClient.refreshAccessToken());
                             await LINE.pushMessage(userId, `ログインしました...${JSON.stringify(await req.user.getCredentials()).length}`);
                         }
                     }

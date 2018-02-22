@@ -29,6 +29,12 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
             userId: userId,
             state: JSON.stringify(req.body)
         });
+        // ログイン済であれば次へ
+        const credentials = yield req.user.getCredentials();
+        if (credentials !== null) {
+            next();
+            return;
+        }
         // face loginイベントであれば、メッセージを送信
         if (event.type === 'postback' && event.postback !== undefined) {
             const data = querystring.parse(event.postback.data);
@@ -72,8 +78,7 @@ SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
                                 refresh_token: refreshToken,
                                 token_type: 'Bearer'
                             });
-                            const credentials = yield req.user.authClient.refreshAccessToken();
-                            yield req.user.signInForcibly(credentials);
+                            yield req.user.signInForcibly(yield req.user.authClient.refreshAccessToken());
                             yield LINE.pushMessage(userId, `ログインしました...${JSON.stringify(yield req.user.getCredentials()).length}`);
                         }
                     }
