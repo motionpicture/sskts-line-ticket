@@ -76,6 +76,7 @@ if (USER_EXPIRES_IN_SECONDS === undefined) {
 }
 // tslint:disable-next-line:no-magic-numbers
 const EXPIRES_IN_SECONDS = parseInt(USER_EXPIRES_IN_SECONDS, 10);
+const YEAR = 31536000;
 
 /**
  * LINEユーザー
@@ -121,6 +122,11 @@ export default class User {
             .then((value) => (value === null) ? null : JSON.parse(value));
     }
 
+    public async getRefreshToken(): Promise<string | null> {
+        return redisClient.get(`line-ticket.refreshToken.${this.userId}`)
+            .then((value) => (value === null) ? null : value);
+    }
+
     public setCredentials(credentials: ICredentials) {
         const payload = <any>jwt.decode(credentials.access_token);
         debug('payload:', payload);
@@ -141,12 +147,23 @@ export default class User {
             throw new Error('Access token is required for credentials.');
         }
 
+        if (credentials.refresh_token === undefined) {
+            throw new Error('Refresh token is required for credentials.');
+        }
+
         // ログイン状態を保持
         const results = await redisClient.multi()
             .set(`line-ticket.credentials.${this.userId}`, JSON.stringify(credentials))
             .expire(`line-ticket.credentials.${this.userId}`, EXPIRES_IN_SECONDS, debug)
             .exec();
         debug('results:', results);
+
+        // リフレッシュトークンを保管
+        await redisClient.multi()
+            .set(`line-ticket.refreshToken.${this.userId}`, credentials.refresh_token)
+            .expire(`line-ticket.refreshToken.${this.userId}`, YEAR, debug)
+            .exec();
+        debug('refresh token saved.');
 
         this.setCredentials({ ...credentials, access_token: credentials.access_token });
 
