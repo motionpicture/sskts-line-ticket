@@ -40,29 +40,17 @@ export async function message(event: LINE.IWebhookEvent, user: User) {
                         await MessageController.logout(user);
                         break;
 
-                    // 取引csv要求
-                    case /^csv$/.test(messageText):
-                        await MessageController.askFromWhenAndToWhen(userId);
-                        break;
-
-                    // 取引csv期間指定
-                    case /^\d{8}-\d{8}$/.test(messageText):
-                        // tslint:disable-next-line:no-magic-numbers
-                        await MessageController.publishURI4transactionsCSV(userId, messageText.substr(0, 8), messageText.substr(9, 8));
-                        break;
-
-                    // 取引csv期間指定
-                    case /予約/.test(messageText):
+                    case /^座席予約$/.test(messageText):
                         await MessageController.askEventStartDate(userId);
                         break;
 
                     // 残高照会
-                    case /残高/.test(messageText):
+                    case /^口座残高$/.test(messageText):
                         await MessageController.findAccount(user);
                         break;
 
                     // 口座取引履歴
-                    case /口座取引履歴/.test(messageText):
+                    case /^口座取引履歴$/.test(messageText):
                         await MessageController.searchAccountTradeActions(user);
                         break;
 

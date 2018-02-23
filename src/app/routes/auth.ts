@@ -55,7 +55,7 @@ authRouter.get(
 <body onload="location.href='line://'">
 <div style="text-align:center; font-size:400%">
 <h1>Hello ${user.payload.username}.</h1>
-<a href="${location}">Back to LINE.</a>
+<a href="${location}">LINEへ戻る</a>
 </div>
 </body>
 </html>`
@@ -95,7 +95,7 @@ authRouter.get(
 <body onload="location.href='line://'">
 <div style="text-align:center; font-size:400%">
 <h1>Logged out.</h1>
-<a href="${location}">Back to LINE.</a>
+<a href="${location}">LINEへ戻る</a>
 </div>
 </body>
 </html>`
