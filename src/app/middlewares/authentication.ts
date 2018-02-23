@@ -88,7 +88,7 @@ export async function sendLoginButton(user: User) {
         actions.push({
             type: 'postback',
             label: 'Face Login',
-            data: `action=loginByFace&state=${encodeURIComponent(user.state)}`
+            data: `action=loginByFace&state=${user.state}`
         });
     }
 
