@@ -23,6 +23,8 @@ const debug = createDebug('sskts-line-ticket:controller:webhook:message');
 export async function pushHowToUse(userId: string) {
     // tslint:disable-next-line:no-multiline-string
     const text = `How to use
+メニューボタンから操作することもできます。
+
 --------------------
 座席予約
 --------------------

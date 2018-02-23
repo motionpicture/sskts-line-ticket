@@ -34,8 +34,8 @@ if (USER_EXPIRES_IN_SECONDS === undefined) {
 }
 // tslint:disable-next-line:no-magic-numbers
 const EXPIRES_IN_SECONDS = parseInt(USER_EXPIRES_IN_SECONDS, 10);
-// const REFRESH_TOKEN_EXPIRES_IN_SECONDS = 31536000;
-const REFRESH_TOKEN_EXPIRES_IN_SECONDS = 300;
+const REFRESH_TOKEN_EXPIRES_IN_SECONDS = 604800;
+// const REFRESH_TOKEN_EXPIRES_IN_SECONDS = 300;
 /**
  * LINEユーザー
  * @class

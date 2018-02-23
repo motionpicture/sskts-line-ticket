@@ -29,6 +29,8 @@ function pushHowToUse(userId) {
     return __awaiter(this, void 0, void 0, function* () {
         // tslint:disable-next-line:no-multiline-string
         const text = `How to use
+メニューボタンから操作することもできます。
+
 --------------------
 座席予約
 --------------------
