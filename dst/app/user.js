@@ -9,10 +9,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const ssktsapi = require("@motionpicture/sskts-api-nodejs-client");
+const AWS = require("aws-sdk");
 const createDebug = require("debug");
 const redis = require("ioredis");
 const jwt = require("jsonwebtoken");
 const debug = createDebug('sskts-line-ticket:user');
+// 以下環境変数をセットすること
+// AWS_ACCESS_KEY_ID
+// AWS_SECRET_ACCESS_KEY
+const rekognition = new AWS.Rekognition({
+    apiVersion: '2016-06-27',
+    region: 'us-west-2'
+});
 const redisClient = new redis({
     host: process.env.REDIS_HOST,
     // tslint:disable-next-line:no-magic-numbers
@@ -133,6 +141,80 @@ class User {
                 .set(`transaction.${this.userId}`, JSON.stringify(transaction))
                 .expire(`transaction.${this.userId}`, EXPIRES_IN_SECONDS, debug)
                 .exec();
+        });
+    }
+    /**
+     * 顔画像を検証する
+     * @param source 顔画像buffer
+     */
+    verifyFace(source) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const collectionId = `sskts-line-ticket-${this.userId}`;
+            return new Promise((resolve, reject) => {
+                rekognition.searchFacesByImage({
+                    CollectionId: collectionId,
+                    FaceMatchThreshold: 90,
+                    MaxFaces: 5,
+                    Image: {
+                        Bytes: source
+                    }
+                }, (err, data) => {
+                    if (err instanceof Error) {
+                        reject(err);
+                    }
+                    else {
+                        resolve(data);
+                    }
+                });
+            });
+        });
+    }
+    /**
+     * 顔画像を登録する
+     * @param source 顔画像buffer
+     */
+    indexFace(source) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const collectionId = `sskts-line-ticket-${this.userId}`;
+            yield new Promise((resolve, reject) => {
+                rekognition.indexFaces({
+                    CollectionId: collectionId,
+                    Image: {
+                        Bytes: source
+                    },
+                    DetectionAttributes: ['ALL']
+                    // ExternalImageId: 'STRING_VALUE'
+                }, (err, __) => {
+                    if (err instanceof Error) {
+                        reject(err);
+                    }
+                    else {
+                        debug('face indexed.');
+                        resolve();
+                    }
+                });
+            });
+        });
+    }
+    /**
+     * 登録済顔画像を検索する
+     */
+    listFaces() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const collectionId = `sskts-line-ticket-${this.userId}`;
+            return new Promise((resolve, reject) => {
+                rekognition.listFaces({
+                    CollectionId: collectionId
+                }, (err, data) => {
+                    if (err instanceof Error) {
+                        reject(err);
+                    }
+                    else {
+                        const faces = (data.Faces !== undefined) ? data.Faces : [];
+                        resolve(faces);
+                    }
+                });
+            });
         });
     }
 }

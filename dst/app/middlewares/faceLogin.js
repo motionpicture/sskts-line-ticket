@@ -12,7 +12,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const sskts = require("@motionpicture/sskts-domain");
-const AWS = require("aws-sdk");
 const http_status_1 = require("http-status");
 const querystring = require("querystring");
 const LINE = require("../../line");
@@ -47,39 +46,44 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
         // 画像が送信されてくれば、顔認証
         if (event.type === 'message' && event.message !== undefined) {
             if (event.message.type === 'image') {
-                yield LINE.pushMessage(userId, `これは写真です。${event.message.id}`);
-                yield LINE.pushMessage(userId, 'getting content...');
-                const content = yield LINE.getContent(event.message.id);
-                yield LINE.pushMessage(userId, `typeof content: ${typeof content}`);
-                yield LINE.pushMessage(userId, `content.length: ${content.length}`);
                 try {
-                    const searchFacesByImageResponse = yield searchFacesByImage(new Buffer(content));
-                    if (!Array.isArray(searchFacesByImageResponse.FaceMatches)) {
-                        yield LINE.pushMessage(userId, '一致しません。');
-                    }
-                    else if (searchFacesByImageResponse.FaceMatches.length === 0) {
-                        yield LINE.pushMessage(userId, '一致しません。');
+                    const faces = yield req.user.listFaces();
+                    if (faces.length === 0) {
+                        // 顔登録済でなければメッセージ送信
+                        yield LINE.pushMessage(userId, '顔写真を少なくとも1枚登録してください。');
                     }
                     else {
-                        yield LINE.pushMessage(userId, `searchFacesByImageResponse
---------------------
-マッチ結果数: ${searchFacesByImageResponse.FaceMatches.length}
-類似率: ${searchFacesByImageResponse.FaceMatches[0].Similarity}
-SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
-    `);
-                        // 一致結果があれば、リフレッシュトークンでアクセストークンを手動更新して、ログイン
-                        yield LINE.pushMessage(userId, 'ログインします...');
-                        const refreshToken = yield req.user.getRefreshToken();
-                        if (refreshToken === null) {
-                            yield LINE.pushMessage(userId, 'LINEと会員が結合されていません。一度、IDとパスワードでログインしてください。');
+                        yield LINE.pushMessage(userId, `画像を検証しています...${event.message.id}`);
+                        const content = yield LINE.getContent(event.message.id);
+                        const searchFacesByImageResponse = yield req.user.verifyFace(new Buffer(content));
+                        // const searchFacesByImageResponse = await searchFacesByImage(new Buffer(content));
+                        if (!Array.isArray(searchFacesByImageResponse.FaceMatches)) {
+                            yield LINE.pushMessage(userId, '一致しませんでした。');
+                        }
+                        else if (searchFacesByImageResponse.FaceMatches.length === 0) {
+                            yield LINE.pushMessage(userId, '一致しませんでした。');
                         }
                         else {
-                            req.user.authClient.setCredentials({
-                                refresh_token: refreshToken,
-                                token_type: 'Bearer'
-                            });
-                            yield req.user.signInForcibly(yield req.user.authClient.refreshAccessToken());
-                            yield LINE.pushMessage(userId, `ログインしました...${JSON.stringify(yield req.user.getCredentials()).length}`);
+                            yield LINE.pushMessage(userId, `searchFacesByImageResponse
+    --------------------
+    マッチ結果数: ${searchFacesByImageResponse.FaceMatches.length}
+    類似率: ${searchFacesByImageResponse.FaceMatches[0].Similarity}
+    SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
+        `);
+                            // 一致結果があれば、リフレッシュトークンでアクセストークンを手動更新して、ログイン
+                            yield LINE.pushMessage(userId, 'ログインします...');
+                            const refreshToken = yield req.user.getRefreshToken();
+                            if (refreshToken === null) {
+                                yield LINE.pushMessage(userId, 'LINEと会員が結合されていません。一度、IDとパスワードでログインしてください。');
+                            }
+                            else {
+                                req.user.authClient.setCredentials({
+                                    refresh_token: refreshToken,
+                                    token_type: 'Bearer'
+                                });
+                                yield req.user.signInForcibly(yield req.user.authClient.refreshAccessToken());
+                                yield LINE.pushMessage(userId, `ログインしました...${JSON.stringify(yield req.user.getCredentials()).length}`);
+                            }
                         }
                     }
                 }
@@ -96,33 +100,31 @@ SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
         next(new sskts.factory.errors.Unauthorized(error.message));
     }
 });
-function searchFacesByImage(source) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // 以下環境変数をセットすること
-        // AWS_ACCESS_KEY_ID
-        // AWS_SECRET_ACCESS_KEY
-        const rekognition = new AWS.Rekognition({
-            apiVersion: '2016-06-27',
-            region: 'us-west-2'
-        });
-        const collectionId = 'tetsuphotos';
-        return new Promise((resolve, reject) => {
-            rekognition.searchFacesByImage({
-                CollectionId: collectionId,
-                FaceMatchThreshold: 90,
-                MaxFaces: 5,
-                Image: {
-                    Bytes: source
-                }
-            }, (err, data) => {
-                if (err instanceof Error) {
-                    reject(err);
-                }
-                else {
-                    resolve(data);
-                }
-            });
-        });
-    });
-}
-exports.searchFacesByImage = searchFacesByImage;
+// export async function searchFacesByImage(source: Buffer) {
+//     // 以下環境変数をセットすること
+//     // AWS_ACCESS_KEY_ID
+//     // AWS_SECRET_ACCESS_KEY
+//     const rekognition = new AWS.Rekognition({
+//         apiVersion: '2016-06-27',
+//         region: 'us-west-2'
+//     });
+//     const collectionId = 'tetsuphotos';
+//     return new Promise<AWS.Rekognition.Types.SearchFacesByImageResponse>((resolve, reject) => {
+//         rekognition.searchFacesByImage(
+//             {
+//                 CollectionId: collectionId, // required
+//                 FaceMatchThreshold: 90,
+//                 MaxFaces: 5,
+//                 Image: { // required
+//                     Bytes: source
+//                 }
+//             },
+//             (err, data) => {
+//                 if (err instanceof Error) {
+//                     reject(err);
+//                 } else {
+//                     resolve(data);
+//                 }
+//             });
+//     });
+// }

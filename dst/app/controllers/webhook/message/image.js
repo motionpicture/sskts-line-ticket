@@ -12,38 +12,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const AWS = require("aws-sdk");
-const createDebug = require("debug");
+// import * as createDebug from 'debug';
 const LINE = require("../../../../line");
-const debug = createDebug('sskts-line-ticket:controller:webhook:message:image');
-const rekognition = new AWS.Rekognition({
-    apiVersion: '2016-06-27',
-    region: 'us-west-2'
-});
+// const debug = createDebug('sskts-line-ticket:controller:webhook:message:image');
 function indexFace(user, messageId) {
     return __awaiter(this, void 0, void 0, function* () {
-        const collectionId = 'tetsuphotos';
         const content = yield LINE.getContent(messageId);
         // faceをコレクションに登録
         const source = new Buffer(content);
-        yield new Promise((resolve, reject) => {
-            rekognition.indexFaces({
-                CollectionId: collectionId,
-                Image: {
-                    Bytes: source
-                },
-                DetectionAttributes: ['ALL']
-                // ExternalImageId: 'STRING_VALUE'
-            }, (err, __) => {
-                if (err instanceof Error) {
-                    reject(err);
-                }
-                else {
-                    debug('face indexed.');
-                    resolve();
-                }
-            });
-        });
+        yield user.indexFace(source);
         yield LINE.pushMessage(user.userId, '顔写真を登録しました。Face Loginをご利用できます。');
     });
 }
