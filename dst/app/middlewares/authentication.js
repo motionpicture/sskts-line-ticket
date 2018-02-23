@@ -71,7 +71,6 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
 });
 function sendLoginButton(user) {
     return __awaiter(this, void 0, void 0, function* () {
-        const refreshToken = yield user.getRefreshToken();
         let text = 'ログインしてください。一度ログイン後、顔写真を登録すると、次回からFace Loginを使用できます。';
         const actions = [
             {
@@ -80,7 +79,10 @@ function sendLoginButton(user) {
                 uri: user.generateAuthUrl()
             }
         ];
-        if (refreshToken !== null) {
+        const refreshToken = yield user.getRefreshToken();
+        const faces = yield user.searchFaces();
+        // リフレッシュトークン保管済、かつ、顔画像登録済であればFace Login使用可能
+        if (refreshToken !== null && faces.length > 0) {
             text = 'ログインしてください。';
             actions.push({
                 type: 'postback',

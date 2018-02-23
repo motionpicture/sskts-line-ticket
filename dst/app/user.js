@@ -46,6 +46,7 @@ class User {
         this.host = configurations.host;
         this.userId = configurations.userId;
         this.state = configurations.state;
+        this.rekognitionCollectionId = `sskts-line-ticket-${this.userId}`;
         this.authClient = new ssktsapi.auth.OAuth2({
             domain: process.env.API_AUTHORIZE_SERVER_DOMAIN,
             clientId: process.env.API_CLIENT_ID,
@@ -101,6 +102,25 @@ class User {
                 .expire(`line-ticket.credentials.${this.userId}`, EXPIRES_IN_SECONDS, debug)
                 .exec();
             debug('results:', results);
+            // rekognitionコレクション作成
+            yield new Promise((resolve, reject) => {
+                rekognition.createCollection({
+                    CollectionId: this.rekognitionCollectionId
+                }, (err, __) => __awaiter(this, void 0, void 0, function* () {
+                    if (err instanceof Error) {
+                        // すでに作成済であればok
+                        if (err.code === 'ResourceAlreadyExistsException') {
+                            resolve();
+                        }
+                        else {
+                            reject(err);
+                        }
+                    }
+                    else {
+                        resolve();
+                    }
+                }));
+            });
             // リフレッシュトークンを保管
             yield redisClient.multi()
                 .set(`line-ticket.refreshToken.${this.userId}`, credentials.refresh_token)
@@ -149,10 +169,9 @@ class User {
      */
     verifyFace(source) {
         return __awaiter(this, void 0, void 0, function* () {
-            const collectionId = `sskts-line-ticket-${this.userId}`;
             return new Promise((resolve, reject) => {
                 rekognition.searchFacesByImage({
-                    CollectionId: collectionId,
+                    CollectionId: this.rekognitionCollectionId,
                     FaceMatchThreshold: 90,
                     MaxFaces: 5,
                     Image: {
@@ -175,10 +194,9 @@ class User {
      */
     indexFace(source) {
         return __awaiter(this, void 0, void 0, function* () {
-            const collectionId = `sskts-line-ticket-${this.userId}`;
             yield new Promise((resolve, reject) => {
                 rekognition.indexFaces({
-                    CollectionId: collectionId,
+                    CollectionId: this.rekognitionCollectionId,
                     Image: {
                         Bytes: source
                     },
@@ -199,15 +217,20 @@ class User {
     /**
      * 登録済顔画像を検索する
      */
-    listFaces() {
+    searchFaces() {
         return __awaiter(this, void 0, void 0, function* () {
-            const collectionId = `sskts-line-ticket-${this.userId}`;
             return new Promise((resolve, reject) => {
                 rekognition.listFaces({
-                    CollectionId: collectionId
+                    CollectionId: this.rekognitionCollectionId
                 }, (err, data) => {
                     if (err instanceof Error) {
-                        reject(err);
+                        // コレクション未作成であれば空配列を返す
+                        if (err.code === 'ResourceNotFoundException') {
+                            resolve([]);
+                        }
+                        else {
+                            reject(err);
+                        }
                     }
                     else {
                         const faces = (data.Faces !== undefined) ? data.Faces : [];

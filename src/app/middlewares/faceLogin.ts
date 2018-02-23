@@ -48,7 +48,7 @@ export default async (req: Request, res: Response, next: NextFunction) => {
         if (event.type === 'message' && event.message !== undefined) {
             if (event.message.type === 'image') {
                 try {
-                    const faces = await req.user.listFaces();
+                    const faces = await req.user.searchFaces();
                     if (faces.length === 0) {
                         // 顔登録済でなければメッセージ送信
                         await LINE.pushMessage(userId, '顔写真を少なくとも1枚登録してください。');

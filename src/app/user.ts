@@ -60,15 +60,6 @@ export interface IPayload {
 }
 
 /**
- * 公開鍵インターフェース
- * @export
- * @interface
- */
-export interface IPems {
-    [key: string]: string;
-}
-
-/**
  * ユーザー設定インターフェース
  * @export
  * @interface
@@ -100,11 +91,13 @@ export default class User {
     public payload: IPayload;
     public accessToken: string;
     public authClient: ssktsapi.auth.OAuth2;
+    public rekognitionCollectionId: string;
 
     constructor(configurations: IConfigurations) {
         this.host = configurations.host;
         this.userId = configurations.userId;
         this.state = configurations.state;
+        this.rekognitionCollectionId = `sskts-line-ticket-${this.userId}`;
 
         this.authClient = new ssktsapi.auth.OAuth2({
             domain: <string>process.env.API_AUTHORIZE_SERVER_DOMAIN,
@@ -168,6 +161,26 @@ export default class User {
             .exec();
         debug('results:', results);
 
+        // rekognitionコレクション作成
+        await new Promise((resolve, reject) => {
+            rekognition.createCollection(
+                {
+                    CollectionId: this.rekognitionCollectionId
+                },
+                async (err, __) => {
+                    if (err instanceof Error) {
+                        // すでに作成済であればok
+                        if (err.code === 'ResourceAlreadyExistsException') {
+                            resolve();
+                        } else {
+                            reject(err);
+                        }
+                    } else {
+                        resolve();
+                    }
+                });
+        });
+
         // リフレッシュトークンを保管
         await redisClient.multi()
             .set(`line-ticket.refreshToken.${this.userId}`, credentials.refresh_token)
@@ -215,12 +228,10 @@ export default class User {
      * @param source 顔画像buffer
      */
     public async verifyFace(source: Buffer) {
-        const collectionId = `sskts-line-ticket-${this.userId}`;
-
         return new Promise<AWS.Rekognition.Types.SearchFacesByImageResponse>((resolve, reject) => {
             rekognition.searchFacesByImage(
                 {
-                    CollectionId: collectionId, // required
+                    CollectionId: this.rekognitionCollectionId, // required
                     FaceMatchThreshold: 90,
                     MaxFaces: 5,
                     Image: { // required
@@ -242,12 +253,10 @@ export default class User {
      * @param source 顔画像buffer
      */
     public async indexFace(source: Buffer) {
-        const collectionId = `sskts-line-ticket-${this.userId}`;
-
         await new Promise((resolve, reject) => {
             rekognition.indexFaces(
                 {
-                    CollectionId: collectionId,
+                    CollectionId: this.rekognitionCollectionId,
                     Image: {
                         Bytes: source
                     },
@@ -268,17 +277,20 @@ export default class User {
     /**
      * 登録済顔画像を検索する
      */
-    public async listFaces() {
-        const collectionId = `sskts-line-ticket-${this.userId}`;
-
+    public async searchFaces() {
         return new Promise<AWS.Rekognition.FaceList>((resolve, reject) => {
             rekognition.listFaces(
                 {
-                    CollectionId: collectionId
+                    CollectionId: this.rekognitionCollectionId
                 },
                 (err, data) => {
                     if (err instanceof Error) {
-                        reject(err);
+                        // コレクション未作成であれば空配列を返す
+                        if (err.code === 'ResourceNotFoundException') {
+                            resolve([]);
+                        } else {
+                            reject(err);
+                        }
                     } else {
                         const faces = (data.Faces !== undefined) ? data.Faces : [];
                         resolve(faces);

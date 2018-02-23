@@ -47,7 +47,7 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
         if (event.type === 'message' && event.message !== undefined) {
             if (event.message.type === 'image') {
                 try {
-                    const faces = yield req.user.listFaces();
+                    const faces = yield req.user.searchFaces();
                     if (faces.length === 0) {
                         // 顔登録済でなければメッセージ送信
                         yield LINE.pushMessage(userId, '顔写真を少なくとも1枚登録してください。');
