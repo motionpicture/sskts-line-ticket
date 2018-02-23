@@ -39,6 +39,8 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
         if (event.type === 'postback' && event.postback !== undefined) {
             const data = querystring.parse(event.postback.data);
             if (data.action === 'loginByFace') {
+                // ログイン前のstateを保管
+                yield req.user.saveCallbackState(data.state);
                 yield LINE.pushMessage(userId, '顔写真を送信してください。');
                 res.status(http_status_1.OK).send('ok');
                 return;
@@ -81,12 +83,16 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
                                 yield LINE.pushMessage(userId, `ログインしました...${JSON.stringify(yield req.user.getCredentials()).length}`);
                                 // イベントを強制的に再送信
                                 try {
-                                    yield request.post(`https://${req.hostname}/webhook`, {
-                                        headers: {
-                                            'Content-Type': 'application/json'
-                                        },
-                                        form: req.body
-                                    }).promise();
+                                    const callbackState = yield req.user.findCallbackState();
+                                    if (callbackState !== null) {
+                                        yield req.user.deleteCallbackState();
+                                        yield request.post(`https://${req.hostname}/webhook`, {
+                                            headers: {
+                                                'Content-Type': 'application/json'
+                                            },
+                                            form: callbackState
+                                        }).promise();
+                                    }
                                 }
                                 catch (error) {
                                     yield LINE.pushMessage(event.source.userId, error.message);

@@ -107,10 +107,6 @@ function postback(event, user) {
                 case 'confirmOrder':
                     yield PostbackController.confirmOrder(user, data.transactionId);
                     break;
-                // face login
-                // case 'loginByFace':
-                //     await PostbackController.loginByFace(user, <string>data.transactionId);
-                //     break;
                 default:
             }
         }

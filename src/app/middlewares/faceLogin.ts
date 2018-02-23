@@ -37,6 +37,8 @@ export default async (req: Request, res: Response, next: NextFunction) => {
         if (event.type === 'postback' && event.postback !== undefined) {
             const data = querystring.parse(event.postback.data);
             if (data.action === 'loginByFace') {
+                // ログイン前のstateを保管
+                await req.user.saveCallbackState(<string>data.state);
                 await LINE.pushMessage(userId, '顔写真を送信してください。');
                 res.status(OK).send('ok');
 
@@ -79,12 +81,16 @@ export default async (req: Request, res: Response, next: NextFunction) => {
 
                                 // イベントを強制的に再送信
                                 try {
-                                    await request.post(`https://${req.hostname}/webhook`, {
-                                        headers: {
-                                            'Content-Type': 'application/json'
-                                        },
-                                        form: req.body
-                                    }).promise();
+                                    const callbackState = await req.user.findCallbackState();
+                                    if (callbackState !== null) {
+                                        await req.user.deleteCallbackState();
+                                        await request.post(`https://${req.hostname}/webhook`, {
+                                            headers: {
+                                                'Content-Type': 'application/json'
+                                            },
+                                            form: callbackState
+                                        }).promise();
+                                    }
                                 } catch (error) {
                                     await LINE.pushMessage(event.source.userId, error.message);
                                 }

@@ -31,6 +31,7 @@
 | `API_CODE_VERIFIER`           | true     |                     |                  |
 | `AWS_ACCESS_KEY_ID`           | true     |                     |                  |
 | `AWS_SECRET_ACCESS_KEY`       | true     |                     |                  |
+| `FACE_MATCH_THRESHOLD`        | true     |                     | 顔認証閾値       |
 
 
 ## Code Samples

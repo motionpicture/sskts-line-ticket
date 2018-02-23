@@ -22,6 +22,9 @@ const redisClient = new redis({
     tls: <any>{ servername: <string>process.env.REDIS_HOST }
 });
 
+const FACE_MATCH_THRESHOLD_ENV = process.env.FACE_MATCH_THRESHOLD;
+const FACE_MATCH_THRESHOLD = parseInt((FACE_MATCH_THRESHOLD_ENV !== undefined) ? FACE_MATCH_THRESHOLD_ENV : '70', 10);
+
 export interface ICredentials {
     /**
      * リフレッシュトークン
@@ -223,6 +226,23 @@ export default class User {
             .exec();
     }
 
+    public async saveCallbackState(state: string) {
+        await redisClient.multi()
+            .set(`line-ticket.callbackState.${this.userId}`, state)
+            .expire(`line-ticket.callbackState.${this.userId}`, EXPIRES_IN_SECONDS, debug)
+            .exec();
+    }
+
+    public async findCallbackState(): Promise<Object | null> {
+        return redisClient.get(`line-ticket.callbackState.${this.userId}`).then((value) => {
+            return (value !== null) ? JSON.parse(value) : null;
+        });
+    }
+
+    public async deleteCallbackState() {
+        await redisClient.del(`line-ticket.callbackState.${this.userId}`);
+    }
+
     /**
      * 顔画像を検証する
      * @param source 顔画像buffer
@@ -231,10 +251,10 @@ export default class User {
         return new Promise<AWS.Rekognition.Types.SearchFacesByImageResponse>((resolve, reject) => {
             rekognition.searchFacesByImage(
                 {
-                    CollectionId: this.rekognitionCollectionId, // required
-                    FaceMatchThreshold: 90,
+                    CollectionId: this.rekognitionCollectionId,
+                    FaceMatchThreshold: FACE_MATCH_THRESHOLD,
                     MaxFaces: 5,
-                    Image: { // required
+                    Image: {
                         Bytes: source
                     }
                 },

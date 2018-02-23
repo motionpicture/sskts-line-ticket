@@ -87,7 +87,7 @@ function sendLoginButton(user) {
             actions.push({
                 type: 'postback',
                 label: 'Face Login',
-                data: 'action=loginByFace'
+                data: `action=loginByFace&state=${JSON.stringify(user.state)}`
             });
         }
         yield request.post({

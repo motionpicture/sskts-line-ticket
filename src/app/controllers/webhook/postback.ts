@@ -431,12 +431,13 @@ ${order.price}
                         type: 'carousel',
                         columns: order.acceptedOffers.map((offer) => {
                             const itemOffered = offer.itemOffered;
+                            // tslint:disable-next-line:max-line-length
+                            const qr = `https://chart.apis.google.com/chart?chs=300x300&cht=qr&chl=${itemOffered.reservedTicket.ticketToken}`;
 
                             return {
-                                // tslint:disable-next-line:max-line-length no-http-string
-                                thumbnailImageUrl: `https://chart.apis.google.com/chart?chs=300x300&cht=qr&chl=${itemOffered.reservedTicket.ticketToken}`,
+                                thumbnailImageUrl: qr,
                                 // imageBackgroundColor: '#000000',
-                                title: itemOffered.reservationFor.name,
+                                title: itemOffered.reservationFor.name.ja,
                                 // tslint:disable-next-line:max-line-length
                                 text: `${itemOffered.reservedTicket.ticketedSeat.seatNumber} ${itemOffered.reservedTicket.coaTicketInfo.ticketName} ￥${itemOffered.reservedTicket.coaTicketInfo.salePrice}`,
                                 actions: [
