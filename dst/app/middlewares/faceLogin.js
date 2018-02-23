@@ -14,6 +14,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const sskts = require("@motionpicture/sskts-domain");
 const http_status_1 = require("http-status");
 const querystring = require("querystring");
+const request = require("request-promise-native");
 const LINE = require("../../line");
 const user_1 = require("../user");
 exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
@@ -64,12 +65,7 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
                             yield LINE.pushMessage(userId, '一致しませんでした。');
                         }
                         else {
-                            yield LINE.pushMessage(userId, `searchFacesByImageResponse
-    --------------------
-    マッチ結果数: ${searchFacesByImageResponse.FaceMatches.length}
-    類似率: ${searchFacesByImageResponse.FaceMatches[0].Similarity}
-    SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
-        `);
+                            yield LINE.pushMessage(userId, `${searchFacesByImageResponse.FaceMatches[0].Similarity}%の確立で一致しました。`);
                             // 一致結果があれば、リフレッシュトークンでアクセストークンを手動更新して、ログイン
                             yield LINE.pushMessage(userId, 'ログインします...');
                             const refreshToken = yield req.user.getRefreshToken();
@@ -83,6 +79,18 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
                                 });
                                 yield req.user.signInForcibly(yield req.user.authClient.refreshAccessToken());
                                 yield LINE.pushMessage(userId, `ログインしました...${JSON.stringify(yield req.user.getCredentials()).length}`);
+                                // イベントを強制的に再送信
+                                try {
+                                    yield request.post(`https://${req.hostname}/webhook`, {
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        },
+                                        form: req.body
+                                    }).promise();
+                                }
+                                catch (error) {
+                                    yield LINE.pushMessage(event.source.userId, error.message);
+                                }
                             }
                         }
                     }

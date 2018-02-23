@@ -415,6 +415,46 @@ ${order.price}
 --------------------
 `;
     await LINE.pushMessage(user.userId, orderDetails);
+
+    await request.post({
+        simple: false,
+        url: 'https://api.line.me/v2/bot/message/push',
+        auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+        json: true,
+        body: {
+            to: user.userId,
+            messages: [
+                {
+                    type: 'template',
+                    altText: 'this is a carousel template',
+                    template: {
+                        type: 'carousel',
+                        columns: order.acceptedOffers.map((offer) => {
+                            const itemOffered = offer.itemOffered;
+
+                            return {
+                                // tslint:disable-next-line:max-line-length no-http-string
+                                thumbnailImageUrl: `https://chart.apis.google.com/chart?chs=300x300&cht=qr&chl=${itemOffered.reservedTicket.ticketToken}`,
+                                // imageBackgroundColor: '#000000',
+                                title: itemOffered.reservationFor.name,
+                                // tslint:disable-next-line:max-line-length
+                                text: `${itemOffered.reservedTicket.ticketedSeat.seatNumber} ${itemOffered.reservedTicket.coaTicketInfo.ticketName} ￥${itemOffered.reservedTicket.coaTicketInfo.salePrice}`,
+                                actions: [
+                                    {
+                                        type: 'postback',
+                                        label: '???',
+                                        data: `action=selectTicket&ticketToken=${itemOffered.reservedTicket.ticketToken}`
+                                    }
+                                ]
+                            };
+                        }),
+                        imageAspectRatio: 'square'
+                        // imageSize: 'cover'
+                    }
+                }
+            ]
+        }
+    }).promise();
 }
 
 /**

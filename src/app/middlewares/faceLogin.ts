@@ -6,6 +6,7 @@ import * as sskts from '@motionpicture/sskts-domain';
 import { NextFunction, Request, Response } from 'express';
 import { OK } from 'http-status';
 import * as querystring from 'querystring';
+import * as request from 'request-promise-native';
 
 import * as LINE from '../../line';
 import User from '../user';
@@ -61,12 +62,7 @@ export default async (req: Request, res: Response, next: NextFunction) => {
                         } else if (searchFacesByImageResponse.FaceMatches.length === 0) {
                             await LINE.pushMessage(userId, '一致しませんでした。');
                         } else {
-                            await LINE.pushMessage(userId, `searchFacesByImageResponse
-    --------------------
-    マッチ結果数: ${searchFacesByImageResponse.FaceMatches.length}
-    類似率: ${searchFacesByImageResponse.FaceMatches[0].Similarity}
-    SearchedFaceConfidence: ${searchFacesByImageResponse.SearchedFaceConfidence}
-        `);
+                            await LINE.pushMessage(userId, `${searchFacesByImageResponse.FaceMatches[0].Similarity}%の確立で一致しました。`);
 
                             // 一致結果があれば、リフレッシュトークンでアクセストークンを手動更新して、ログイン
                             await LINE.pushMessage(userId, 'ログインします...');
@@ -80,6 +76,18 @@ export default async (req: Request, res: Response, next: NextFunction) => {
                                 });
                                 await req.user.signInForcibly(<any>await req.user.authClient.refreshAccessToken());
                                 await LINE.pushMessage(userId, `ログインしました...${JSON.stringify(await req.user.getCredentials()).length}`);
+
+                                // イベントを強制的に再送信
+                                try {
+                                    await request.post(`https://${req.hostname}/webhook`, {
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        },
+                                        form: req.body
+                                    }).promise();
+                                } catch (error) {
+                                    await LINE.pushMessage(event.source.userId, error.message);
+                                }
                             }
                         }
                     }
