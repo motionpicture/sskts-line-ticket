@@ -3,7 +3,6 @@
  */
 
 import * as sskts from '@motionpicture/sskts-domain';
-// import * as AWS from 'aws-sdk';
 import { NextFunction, Request, Response } from 'express';
 import { OK } from 'http-status';
 import * as querystring from 'querystring';
@@ -99,33 +98,3 @@ export default async (req: Request, res: Response, next: NextFunction) => {
         next(new sskts.factory.errors.Unauthorized(error.message));
     }
 };
-
-// export async function searchFacesByImage(source: Buffer) {
-//     // 以下環境変数をセットすること
-//     // AWS_ACCESS_KEY_ID
-//     // AWS_SECRET_ACCESS_KEY
-//     const rekognition = new AWS.Rekognition({
-//         apiVersion: '2016-06-27',
-//         region: 'us-west-2'
-//     });
-//     const collectionId = 'tetsuphotos';
-
-//     return new Promise<AWS.Rekognition.Types.SearchFacesByImageResponse>((resolve, reject) => {
-//         rekognition.searchFacesByImage(
-//             {
-//                 CollectionId: collectionId, // required
-//                 FaceMatchThreshold: 90,
-//                 MaxFaces: 5,
-//                 Image: { // required
-//                     Bytes: source
-//                 }
-//             },
-//             (err, data) => {
-//                 if (err instanceof Error) {
-//                     reject(err);
-//                 } else {
-//                     resolve(data);
-//                 }
-//             });
-//     });
-// }

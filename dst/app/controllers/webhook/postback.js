@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const ssktsapi = require("@motionpicture/sskts-api-nodejs-client");
 const sskts = require("@motionpicture/sskts-domain");
 const createDebug = require("debug");
+const googleapis_1 = require("googleapis");
 const moment = require("moment");
 const request = require("request-promise-native");
 // tslint:disable-next-line:no-require-imports no-var-requires
@@ -22,6 +23,7 @@ require('moment-timezone');
 const LINE = require("../../../line");
 const debug = createDebug('sskts-line-ticket:controller:webhook:postback');
 // const MESSAGE_TRANSACTION_NOT_FOUND = '該当取引はありません';
+const customsearch = googleapis_1.google.customsearch('v1');
 /**
  * 購入番号で取引を検索する
  * @export
@@ -69,6 +71,37 @@ function searchEventsByDate(user, date) {
         // tslint:disable-next-line:no-magic-numbers
         events = events.slice(0, 10);
         yield LINE.pushMessage(user.userId, `${events.length}件のイベントがみつかりました。`);
+        // googleで画像検索
+        const CX = '006320166286449124373:nm_gjsvlgnm';
+        const API_KEY = 'AIzaSyBP1n1HhsS4_KFADZMcBCFOqqSmIgOHAYI';
+        const thumbnails = [];
+        yield Promise.all(events.map((event) => __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve) => {
+                customsearch.cse.list({
+                    cx: CX,
+                    q: event.workPerformed.name,
+                    auth: API_KEY,
+                    num: 1,
+                    rights: 'cc_publicdomain cc_sharealike',
+                    // start: 0,
+                    // imgSize: 'small',
+                    searchType: 'image'
+                }, (err, res) => {
+                    if (!(err instanceof Error)) {
+                        if (Array.isArray(res.data.items) && res.data.items.length > 0) {
+                            debug(res.data.items[0]);
+                            thumbnails.push({
+                                eventIdentifier: event.identifier,
+                                link: res.data.items[0].link,
+                                thumbnailLink: res.data.items[0].image.thumbnailLink
+                            });
+                        }
+                    }
+                    resolve();
+                });
+            });
+        })));
+        debug(thumbnails);
         yield request.post({
             simple: false,
             url: 'https://api.line.me/v2/bot/message/push',
@@ -83,9 +116,15 @@ function searchEventsByDate(user, date) {
                         template: {
                             type: 'carousel',
                             columns: events.map((event) => {
+                                const thumbnail = thumbnails.find((t) => t.eventIdentifier === event.identifier);
+                                const thumbnailImageUrl = (thumbnail !== undefined)
+                                    ? thumbnail.thumbnailLink
+                                    // tslint:disable-next-line:max-line-length
+                                    : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRrhpsOJOcLBwc1SPD9sWlinildy4S05-I2Wf6z2wRXnSxbmtRz';
                                 return {
-                                    //   'thumbnailImageUrl': 'https://example.com/bot/images/item2.jpg',
-                                    //   'imageBackgroundColor': '#000000',
+                                    // tslint:disable-next-line:max-line-length no-http-string
+                                    thumbnailImageUrl: thumbnailImageUrl,
+                                    imageBackgroundColor: '#000000',
                                     title: event.workPerformed.name,
                                     text: `${event.superEvent.location.name.ja} ${event.location.name.ja}`,
                                     actions: [

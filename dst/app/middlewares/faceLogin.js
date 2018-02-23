@@ -100,31 +100,3 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
         next(new sskts.factory.errors.Unauthorized(error.message));
     }
 });
-// export async function searchFacesByImage(source: Buffer) {
-//     // 以下環境変数をセットすること
-//     // AWS_ACCESS_KEY_ID
-//     // AWS_SECRET_ACCESS_KEY
-//     const rekognition = new AWS.Rekognition({
-//         apiVersion: '2016-06-27',
-//         region: 'us-west-2'
-//     });
-//     const collectionId = 'tetsuphotos';
-//     return new Promise<AWS.Rekognition.Types.SearchFacesByImageResponse>((resolve, reject) => {
-//         rekognition.searchFacesByImage(
-//             {
-//                 CollectionId: collectionId, // required
-//                 FaceMatchThreshold: 90,
-//                 MaxFaces: 5,
-//                 Image: { // required
-//                     Bytes: source
-//                 }
-//             },
-//             (err, data) => {
-//                 if (err instanceof Error) {
-//                     reject(err);
-//                 } else {
-//                     resolve(data);
-//                 }
-//             });
-//     });
-// }
