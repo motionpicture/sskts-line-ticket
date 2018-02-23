@@ -55,7 +55,7 @@ export default async (req: Request, res: Response, next: NextFunction) => {
                         // 顔登録済でなければメッセージ送信
                         await LINE.pushMessage(userId, '顔写真を少なくとも1枚登録してください。');
                     } else {
-                        await LINE.pushMessage(userId, `画像を検証しています...${event.message.id}`);
+                        await LINE.pushMessage(userId, `画像を検証中...${event.message.id}`);
                         const content = await LINE.getContent(event.message.id);
                         const searchFacesByImageResponse = await req.user.verifyFace(new Buffer(content));
                         // const searchFacesByImageResponse = await searchFacesByImage(new Buffer(content));
@@ -67,7 +67,6 @@ export default async (req: Request, res: Response, next: NextFunction) => {
                             await LINE.pushMessage(userId, `${searchFacesByImageResponse.FaceMatches[0].Similarity}%の確立で一致しました。`);
 
                             // 一致結果があれば、リフレッシュトークンでアクセストークンを手動更新して、ログイン
-                            await LINE.pushMessage(userId, 'ログインします...');
                             const refreshToken = await req.user.getRefreshToken();
                             if (refreshToken === null) {
                                 await LINE.pushMessage(userId, 'LINEと会員が結合されていません。一度、IDとパスワードでログインしてください。');
@@ -77,9 +76,9 @@ export default async (req: Request, res: Response, next: NextFunction) => {
                                     token_type: 'Bearer'
                                 });
                                 await req.user.signInForcibly(<any>await req.user.authClient.refreshAccessToken());
-                                await LINE.pushMessage(userId, `ログインしました...${JSON.stringify(await req.user.getCredentials()).length}`);
+                                await LINE.pushMessage(userId, `Hello ${req.user.payload.username}.`);
 
-                                // イベントを強制的に再送信
+                                // ログイン前のイベントを強制的に再送信
                                 try {
                                     const callbackState = await req.user.findCallbackState();
                                     if (callbackState !== null) {

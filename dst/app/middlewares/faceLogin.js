@@ -56,7 +56,7 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
                         yield LINE.pushMessage(userId, '顔写真を少なくとも1枚登録してください。');
                     }
                     else {
-                        yield LINE.pushMessage(userId, `画像を検証しています...${event.message.id}`);
+                        yield LINE.pushMessage(userId, `画像を検証中...${event.message.id}`);
                         const content = yield LINE.getContent(event.message.id);
                         const searchFacesByImageResponse = yield req.user.verifyFace(new Buffer(content));
                         // const searchFacesByImageResponse = await searchFacesByImage(new Buffer(content));
@@ -69,7 +69,6 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
                         else {
                             yield LINE.pushMessage(userId, `${searchFacesByImageResponse.FaceMatches[0].Similarity}%の確立で一致しました。`);
                             // 一致結果があれば、リフレッシュトークンでアクセストークンを手動更新して、ログイン
-                            yield LINE.pushMessage(userId, 'ログインします...');
                             const refreshToken = yield req.user.getRefreshToken();
                             if (refreshToken === null) {
                                 yield LINE.pushMessage(userId, 'LINEと会員が結合されていません。一度、IDとパスワードでログインしてください。');
@@ -80,8 +79,8 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
                                     token_type: 'Bearer'
                                 });
                                 yield req.user.signInForcibly(yield req.user.authClient.refreshAccessToken());
-                                yield LINE.pushMessage(userId, `ログインしました...${JSON.stringify(yield req.user.getCredentials()).length}`);
-                                // イベントを強制的に再送信
+                                yield LINE.pushMessage(userId, `Hello ${req.user.payload.username}.`);
+                                // ログイン前のイベントを強制的に再送信
                                 try {
                                     const callbackState = yield req.user.findCallbackState();
                                     if (callbackState !== null) {
