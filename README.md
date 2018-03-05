@@ -15,23 +15,24 @@
 
 ### Environment variables
 
-| Name                          | Required | Purpose             | Value            |
-| ----------------------------- | -------- | ------------------- | ---------------- |
-| `DEBUG`                       | false    | sskts-line-ticket:* | Debug            |
-| `NPM_TOKEN`                   | true     |                     | NPM auth token   |
-| `NODE_ENV`                    | true     |                     | environment name |
-| `API_TOKEN_ISSUER`            | true     |                     |                  |
-| `REDIS_HOST`                  | true     |                     |                  |
-| `REDIS_PORT`                  | true     |                     |                  |
-| `REDIS_KEY`                   | true     |                     |                  |
-| `USER_EXPIRES_IN_SECONDS`     | true     |                     |                  |
-| `API_AUTHORIZE_SERVER_DOMAIN` | true     |                     |                  |
-| `API_CLIENT_ID`               | true     |                     |                  |
-| `API_CLIENT_SECRET`           | true     |                     |                  |
-| `API_CODE_VERIFIER`           | true     |                     |                  |
-| `AWS_ACCESS_KEY_ID`           | true     |                     |                  |
-| `AWS_SECRET_ACCESS_KEY`       | true     |                     |                  |
-| `FACE_MATCH_THRESHOLD`        | true     |                     | 顔認証閾値       |
+| Name                               | Required | Purpose             | Value              |
+| ---------------------------------- | -------- | ------------------- | ------------------ |
+| `DEBUG`                            | false    | sskts-line-ticket:* | Debug              |
+| `NPM_TOKEN`                        | true     |                     | NPM auth token     |
+| `NODE_ENV`                         | true     |                     | environment name   |
+| `API_TOKEN_ISSUER`                 | true     |                     |                    |
+| `REDIS_HOST`                       | true     |                     |                    |
+| `REDIS_PORT`                       | true     |                     |                    |
+| `REDIS_KEY`                        | true     |                     |                    |
+| `USER_EXPIRES_IN_SECONDS`          | true     |                     | ログイン状態保持期間   |
+| `REFRESH_TOKEN_EXPIRES_IN_SECONDS` | true     |                     | リフレッシュトークン保管期間 |
+| `API_AUTHORIZE_SERVER_DOMAIN`      | true     |                     |                    |
+| `API_CLIENT_ID`                    | true     |                     |                    |
+| `API_CLIENT_SECRET`                | true     |                     |                    |
+| `API_CODE_VERIFIER`                | true     |                     |                    |
+| `AWS_ACCESS_KEY_ID`                | true     |                     |                    |
+| `AWS_SECRET_ACCESS_KEY`            | true     |                     |                    |
+| `FACE_MATCH_THRESHOLD`             | true     |                     | 顔認証閾値         |
 
 
 ## Code Samples
