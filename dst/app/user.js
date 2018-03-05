@@ -28,8 +28,6 @@ const redisClient = new redis({
     password: process.env.REDIS_KEY,
     tls: { servername: process.env.REDIS_HOST }
 });
-const FACE_MATCH_THRESHOLD_ENV = process.env.FACE_MATCH_THRESHOLD;
-const FACE_MATCH_THRESHOLD = parseInt((FACE_MATCH_THRESHOLD_ENV !== undefined) ? FACE_MATCH_THRESHOLD_ENV : '70', 10);
 const USER_EXPIRES_IN_SECONDS = process.env.USER_EXPIRES_IN_SECONDS;
 if (USER_EXPIRES_IN_SECONDS === undefined) {
     throw new Error('Environment variable USER_EXPIRES_IN_SECONDS required.');
@@ -194,7 +192,8 @@ class User {
             return new Promise((resolve, reject) => {
                 rekognition.searchFacesByImage({
                     CollectionId: this.rekognitionCollectionId,
-                    FaceMatchThreshold: FACE_MATCH_THRESHOLD,
+                    FaceMatchThreshold: 0,
+                    // FaceMatchThreshold: FACE_MATCH_THRESHOLD,
                     MaxFaces: 5,
                     Image: {
                         Bytes: source

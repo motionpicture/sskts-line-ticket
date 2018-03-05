@@ -17,6 +17,9 @@ const querystring = require("querystring");
 const request = require("request-promise-native");
 const LINE = require("../../line");
 const user_1 = require("../user");
+const FACE_MATCH_THRESHOLD_ENV = process.env.FACE_MATCH_THRESHOLD;
+const FACE_MATCH_THRESHOLD = parseInt((FACE_MATCH_THRESHOLD_ENV !== undefined) ? FACE_MATCH_THRESHOLD_ENV : '70', 10);
+// tslint:disable-next-line:max-func-body-length
 exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     try {
         const event = (req.body.events !== undefined) ? req.body.events[0] : undefined;
@@ -61,40 +64,49 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
                         const searchFacesByImageResponse = yield req.user.verifyFace(new Buffer(content));
                         // const searchFacesByImageResponse = await searchFacesByImage(new Buffer(content));
                         if (!Array.isArray(searchFacesByImageResponse.FaceMatches)) {
-                            yield LINE.pushMessage(userId, '一致しませんでした。');
+                            yield LINE.pushMessage(userId, '類似画像が見つかりませんでした。');
                         }
                         else if (searchFacesByImageResponse.FaceMatches.length === 0) {
-                            yield LINE.pushMessage(userId, '一致しませんでした。');
+                            yield LINE.pushMessage(userId, '類似画像が見つかりませんでした。');
                         }
                         else {
-                            yield LINE.pushMessage(userId, `${searchFacesByImageResponse.FaceMatches[0].Similarity}%の確立で一致しました。`);
-                            // 一致結果があれば、リフレッシュトークンでアクセストークンを手動更新して、ログイン
-                            const refreshToken = yield req.user.getRefreshToken();
-                            if (refreshToken === null) {
-                                yield LINE.pushMessage(userId, 'LINEと会員が結合されていません。一度、IDとパスワードでログインしてください。');
+                            const similarity = searchFacesByImageResponse.FaceMatches[0].Similarity;
+                            if (similarity === undefined) {
+                                yield LINE.pushMessage(userId, '類似画像が見つかりませんでした。');
+                            }
+                            else if (similarity < FACE_MATCH_THRESHOLD) {
+                                yield LINE.pushMessage(userId, `ログインできません。類似率は${searchFacesByImageResponse.FaceMatches[0].Similarity}%です。`);
                             }
                             else {
-                                req.user.authClient.setCredentials({
-                                    refresh_token: refreshToken,
-                                    token_type: 'Bearer'
-                                });
-                                yield req.user.signInForcibly(yield req.user.authClient.refreshAccessToken());
-                                yield LINE.pushMessage(userId, `Hello ${req.user.payload.username}.`);
-                                // ログイン前のイベントを強制的に再送信
-                                try {
-                                    const callbackState = yield req.user.findCallbackState();
-                                    if (callbackState !== null) {
-                                        yield req.user.deleteCallbackState();
-                                        yield request.post(`https://${req.hostname}/webhook`, {
-                                            headers: {
-                                                'Content-Type': 'application/json'
-                                            },
-                                            form: callbackState
-                                        }).promise();
-                                    }
+                                yield LINE.pushMessage(userId, `${searchFacesByImageResponse.FaceMatches[0].Similarity}%の確立で一致しました。`);
+                                // 一致結果があれば、リフレッシュトークンでアクセストークンを手動更新して、ログイン
+                                const refreshToken = yield req.user.getRefreshToken();
+                                if (refreshToken === null) {
+                                    yield LINE.pushMessage(userId, 'LINEと会員が結合されていません。一度、IDとパスワードでログインしてください。');
                                 }
-                                catch (error) {
-                                    yield LINE.pushMessage(event.source.userId, error.message);
+                                else {
+                                    req.user.authClient.setCredentials({
+                                        refresh_token: refreshToken,
+                                        token_type: 'Bearer'
+                                    });
+                                    yield req.user.signInForcibly(yield req.user.authClient.refreshAccessToken());
+                                    yield LINE.pushMessage(userId, `Hello ${req.user.payload.username}.`);
+                                    // ログイン前のイベントを強制的に再送信
+                                    try {
+                                        const callbackState = yield req.user.findCallbackState();
+                                        if (callbackState !== null) {
+                                            yield req.user.deleteCallbackState();
+                                            yield request.post(`https://${req.hostname}/webhook`, {
+                                                headers: {
+                                                    'Content-Type': 'application/json'
+                                                },
+                                                form: callbackState
+                                            }).promise();
+                                        }
+                                    }
+                                    catch (error) {
+                                        yield LINE.pushMessage(event.source.userId, error.message);
+                                    }
                                 }
                             }
                         }

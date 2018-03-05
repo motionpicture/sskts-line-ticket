@@ -22,9 +22,6 @@ const redisClient = new redis({
     tls: <any>{ servername: <string>process.env.REDIS_HOST }
 });
 
-const FACE_MATCH_THRESHOLD_ENV = process.env.FACE_MATCH_THRESHOLD;
-const FACE_MATCH_THRESHOLD = parseInt((FACE_MATCH_THRESHOLD_ENV !== undefined) ? FACE_MATCH_THRESHOLD_ENV : '70', 10);
-
 export interface ICredentials {
     /**
      * リフレッシュトークン
@@ -252,7 +249,8 @@ export default class User {
             rekognition.searchFacesByImage(
                 {
                     CollectionId: this.rekognitionCollectionId,
-                    FaceMatchThreshold: FACE_MATCH_THRESHOLD,
+                    FaceMatchThreshold: 0,
+                    // FaceMatchThreshold: FACE_MATCH_THRESHOLD,
                     MaxFaces: 5,
                     Image: {
                         Bytes: source
