@@ -235,10 +235,10 @@ export async function askEventStartDate(userId: string) {
                                     label: '日付選択',
                                     mode: 'date',
                                     data: 'action=searchEventsByDate',
-                                    initial: moment().format('YYYY-MM-DD'),
+                                    initial: moment().add(1, 'days').format('YYYY-MM-DD'),
                                     // tslint:disable-next-line:no-magic-numbers
                                     max: moment().add(2, 'days').format('YYYY-MM-DD'),
-                                    min: moment().format('YYYY-MM-DD')
+                                    min: moment().add(1, 'days').format('YYYY-MM-DD')
                                 }
                             ]
                         }
