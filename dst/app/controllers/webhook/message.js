@@ -175,6 +175,10 @@ function searchAccountTradeActions(user) {
         let tradeActions = yield personService.searchAccountTradeActions({ personId: 'me' });
         // tslint:disable-next-line:no-magic-numbers
         tradeActions = tradeActions.reverse().slice(0, 10);
+        if (tradeActions.length === 0) {
+            yield LINE.pushMessage(user.userId, 'まだ取引履歴はありません。');
+            return;
+        }
         const actionsStr = tradeActions.map((a) => {
             let actionName = '';
             switch (a.typeOf) {

@@ -167,6 +167,12 @@ export async function searchAccountTradeActions(user: User) {
     // tslint:disable-next-line:no-magic-numbers
     tradeActions = tradeActions.reverse().slice(0, 10);
 
+    if (tradeActions.length === 0) {
+        await LINE.pushMessage(user.userId, 'まだ取引履歴はありません。');
+
+        return;
+    }
+
     const actionsStr = tradeActions.map(
         (a) => {
             let actionName = '';
@@ -195,6 +201,7 @@ export async function searchAccountTradeActions(user: User) {
                 ].join(' ');
         }
     ).join('\n');
+
     await LINE.pushMessage(
         user.userId,
         actionsStr
