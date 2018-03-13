@@ -194,11 +194,11 @@ export async function searchAccountTradeActions(user: User) {
             }
 
             return util.format(
-                '●$s %s %s %s %s[%s] -> %s[%s] @%s %s',
+                '●%s %s %s %s %s[%s] -> %s[%s] @%s %s',
                 (a.fromLocation.id === account.id) ? '出' : '入',
                 moment(a.endDate).format('YY.MM.DD HH:mm'),
                 actionName,
-                a.amount,
+                `${a.amount}円`,
                 a.fromLocation.name,
                 (a.fromLocation.id !== undefined) ? a.fromLocation.id : '',
                 a.toLocation.name,
