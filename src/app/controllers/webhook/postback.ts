@@ -307,7 +307,7 @@ export async function choosePaymentMethod(user: User, paymentMethod: string, tra
     let seatReservations = await actionRepo.findAuthorizeByTransactionId(transactionId);
     seatReservations = seatReservations
         .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
-        .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.authorizeActionPurpose.SeatReservation);
+        .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.seatReservation.ObjectType.SeatReservation);
     const price = seatReservations[0].result.price;
 
     const pecorinoAuthorization = await placeOrderService.createPecorinoAuthorization({
@@ -478,7 +478,7 @@ export async function searchTransactionsByDate(userId: string, date: string) {
             startThrough: startThrough.toDate()
         },
         'csv'
-    )(new sskts.repository.Transaction(sskts.mongoose.connection));
+    )({ transaction: new sskts.repository.Transaction(sskts.mongoose.connection) });
 
     await LINE.pushMessage(userId, 'csvを作成しています...');
 

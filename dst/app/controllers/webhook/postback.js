@@ -295,7 +295,7 @@ function choosePaymentMethod(user, paymentMethod, transactionId) {
         let seatReservations = yield actionRepo.findAuthorizeByTransactionId(transactionId);
         seatReservations = seatReservations
             .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
-            .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.authorizeActionPurpose.SeatReservation);
+            .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.seatReservation.ObjectType.SeatReservation);
         const price = seatReservations[0].result.price;
         const pecorinoAuthorization = yield placeOrderService.createPecorinoAuthorization({
             transactionId: transactionId,
@@ -457,7 +457,7 @@ function searchTransactionsByDate(userId, date) {
         const csv = yield sskts.service.transaction.placeOrder.download({
             startFrom: startFrom.toDate(),
             startThrough: startThrough.toDate()
-        }, 'csv')(new sskts.repository.Transaction(sskts.mongoose.connection));
+        }, 'csv')({ transaction: new sskts.repository.Transaction(sskts.mongoose.connection) });
         yield LINE.pushMessage(userId, 'csvを作成しています...');
         const sasUrl = yield sskts.service.util.uploadFile({
             fileName: `sskts-line-ticket-transactions-${moment().format('YYYYMMDDHHmmss')}.csv`,

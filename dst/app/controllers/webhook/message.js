@@ -17,6 +17,7 @@ const sskts = require("@motionpicture/sskts-domain");
 const createDebug = require("debug");
 const moment = require("moment");
 const request = require("request-promise-native");
+const util = require("util");
 const LINE = require("../../../line");
 const debug = createDebug('sskts-line-ticket:controller:webhook:message');
 /**
@@ -162,7 +163,8 @@ function findAccount(user) {
         });
         const account = yield personService.findAccount({ personId: 'me' });
         debug('account:', account);
-        yield LINE.pushMessage(user.userId, `${account.balance}円`);
+        yield LINE.pushMessage(user.userId, `残高:${account.balance}円
+売掛残高:${account.safeBalance}円`);
     });
 }
 exports.findAccount = findAccount;
@@ -172,36 +174,29 @@ function searchAccountTradeActions(user) {
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
         });
-        let tradeActions = yield personService.searchAccountTradeActions({ personId: 'me' });
+        const account = yield personService.findAccount({ personId: 'me' });
+        let transferActions = yield personService.searchAccountTradeActions({ personId: 'me' });
         // tslint:disable-next-line:no-magic-numbers
-        tradeActions = tradeActions.reverse().slice(0, 10);
-        if (tradeActions.length === 0) {
+        transferActions = transferActions.reverse().slice(0, 10);
+        if (transferActions.length === 0) {
             yield LINE.pushMessage(user.userId, 'まだ取引履歴はありません。');
             return;
         }
-        const actionsStr = tradeActions.map((a) => {
+        const actionsStr = transferActions.map((a) => {
             let actionName = '';
-            switch (a.typeOf) {
-                case 'PayAction':
+            switch (a.purpose.typeOf) {
+                case 'Pay':
                     actionName = '支払';
                     break;
-                case 'TakeAction':
+                case 'Transfer':
+                    actionName = '転送';
+                    break;
+                case 'Deposit':
                     actionName = '入金';
+                    break;
                 default:
             }
-            // tslint:disable-next-line:prefer-template
-            return [
-                '●',
-                (a.typeOf === 'PayAction') ? '出' : '入',
-                actionName,
-                moment(a.endDate).format('YY.MM.DD HH:mm'),
-                `${a.object.price}円`
-            ].join(' ')
-                + '\n'
-                + [
-                    (a.typeOf === 'PayAction') ? a.recipient.name : a.agent.name,
-                    a.object.notes
-                ].join(' ');
+            return util.format('●$s %s %s %s %s[%s] -> %s[%s] @%s %s', (a.fromLocation.id === account.id) ? '出' : '入', moment(a.endDate).format('YY.MM.DD HH:mm'), actionName, a.amount, a.fromLocation.name, (a.fromLocation.id !== undefined) ? a.fromLocation.id : '', a.toLocation.name, (a.toLocation.id !== undefined) ? a.toLocation.id : '', a.purpose.typeOf, a.object.notes);
         }).join('\n');
         yield LINE.pushMessage(user.userId, actionsStr);
     });
@@ -299,7 +294,7 @@ function publishURI4transactionsCSV(userId, dateFrom, dateThrough) {
         const csv = yield sskts.service.transaction.placeOrder.download({
             startFrom: startFrom.toDate(),
             startThrough: startThrough.toDate()
-        }, 'csv')(new sskts.repository.Transaction(sskts.mongoose.connection));
+        }, 'csv')({ transaction: new sskts.repository.Transaction(sskts.mongoose.connection) });
         yield LINE.pushMessage(userId, 'csvを作成しています...');
         const sasUrl = yield sskts.service.util.uploadFile({
             fileName: `sskts - line - ticket - transactions - ${moment().format('YYYYMMDDHHmmss')}.csv`,

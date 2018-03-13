@@ -8,6 +8,7 @@ import * as sskts from '@motionpicture/sskts-domain';
 import * as createDebug from 'debug';
 import * as moment from 'moment';
 import * as request from 'request-promise-native';
+import * as util from 'util';
 
 import * as LINE from '../../../line';
 import User from '../../user';
@@ -155,7 +156,8 @@ export async function findAccount(user: User) {
     const account = await personService.findAccount({ personId: 'me' });
     debug('account:', account);
 
-    await LINE.pushMessage(user.userId, `${account.balance}円`);
+    await LINE.pushMessage(user.userId, `残高:${account.balance}円
+売掛残高:${account.safeBalance}円`);
 }
 
 export async function searchAccountTradeActions(user: User) {
@@ -163,42 +165,47 @@ export async function searchAccountTradeActions(user: User) {
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
     });
-    let tradeActions = await personService.searchAccountTradeActions({ personId: 'me' });
+    const account = await personService.findAccount({ personId: 'me' });
+    let transferActions = await personService.searchAccountTradeActions({ personId: 'me' });
     // tslint:disable-next-line:no-magic-numbers
-    tradeActions = tradeActions.reverse().slice(0, 10);
+    transferActions = transferActions.reverse().slice(0, 10);
 
-    if (tradeActions.length === 0) {
+    if (transferActions.length === 0) {
         await LINE.pushMessage(user.userId, 'まだ取引履歴はありません。');
 
         return;
     }
 
-    const actionsStr = tradeActions.map(
+    const actionsStr = transferActions.map(
         (a) => {
             let actionName = '';
-            switch (a.typeOf) {
-                case 'PayAction':
+            switch (a.purpose.typeOf) {
+                case 'Pay':
                     actionName = '支払';
                     break;
-                case 'TakeAction':
+                case 'Transfer':
+                    actionName = '転送';
+                    break;
+                case 'Deposit':
                     actionName = '入金';
+                    break;
 
                 default:
             }
 
-            // tslint:disable-next-line:prefer-template
-            return [
-                '●',
-                (a.typeOf === 'PayAction') ? '出' : '入',
-                actionName,
+            return util.format(
+                '●$s %s %s %s %s[%s] -> %s[%s] @%s %s',
+                (a.fromLocation.id === account.id) ? '出' : '入',
                 moment(a.endDate).format('YY.MM.DD HH:mm'),
-                `${a.object.price}円`
-            ].join(' ')
-                + '\n'
-                + [
-                    (a.typeOf === 'PayAction') ? a.recipient.name : a.agent.name,
-                    a.object.notes
-                ].join(' ');
+                actionName,
+                a.amount,
+                a.fromLocation.name,
+                (a.fromLocation.id !== undefined) ? a.fromLocation.id : '',
+                a.toLocation.name,
+                (a.toLocation.id !== undefined) ? a.toLocation.id : '',
+                a.purpose.typeOf,
+                a.object.notes
+            );
         }
     ).join('\n');
 
@@ -306,7 +313,7 @@ export async function publishURI4transactionsCSV(userId: string, dateFrom: strin
             startThrough: startThrough.toDate()
         },
         'csv'
-    )(new sskts.repository.Transaction(sskts.mongoose.connection));
+    )({ transaction: new sskts.repository.Transaction(sskts.mongoose.connection) });
 
     await LINE.pushMessage(userId, 'csvを作成しています...');
 
