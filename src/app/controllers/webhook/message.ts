@@ -204,7 +204,7 @@ export async function searchAccountTradeActions(user: User) {
                 a.toLocation.name,
                 (a.toLocation.id !== undefined) ? a.toLocation.id : '',
                 a.purpose.typeOf,
-                a.object.notes
+                (a.object !== undefined) ? a.object.notes : ''
             );
         }
     ).join('\n');

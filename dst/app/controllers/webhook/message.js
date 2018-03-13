@@ -196,7 +196,7 @@ function searchAccountTradeActions(user) {
                     break;
                 default:
             }
-            return util.format('●$s %s %s %s %s[%s] -> %s[%s] @%s %s', (a.fromLocation.id === account.id) ? '出' : '入', moment(a.endDate).format('YY.MM.DD HH:mm'), actionName, a.amount, a.fromLocation.name, (a.fromLocation.id !== undefined) ? a.fromLocation.id : '', a.toLocation.name, (a.toLocation.id !== undefined) ? a.toLocation.id : '', a.purpose.typeOf, a.object.notes);
+            return util.format('●$s %s %s %s %s[%s] -> %s[%s] @%s %s', (a.fromLocation.id === account.id) ? '出' : '入', moment(a.endDate).format('YY.MM.DD HH:mm'), actionName, a.amount, a.fromLocation.name, (a.fromLocation.id !== undefined) ? a.fromLocation.id : '', a.toLocation.name, (a.toLocation.id !== undefined) ? a.toLocation.id : '', a.purpose.typeOf, (a.object !== undefined) ? a.object.notes : '');
         }).join('\n');
         yield LINE.pushMessage(user.userId, actionsStr);
     });
