@@ -71,7 +71,9 @@ exports.default = (req, res, next) => __awaiter(this, void 0, void 0, function* 
 });
 function sendLoginButton(user) {
     return __awaiter(this, void 0, void 0, function* () {
-        let text = 'ログインしてください。一度ログイン後、顔写真を登録すると、次回からFace Loginを使用できます。';
+        // tslint:disable-next-line:no-multiline-string
+        let text = `ログインしてください。一度ログイン後、顔写真を登録すると、次回からFace Loginを使用できます。
+また、会員未登録の方は、「Sign In」のリンク先に「Sign Up」のリンクがございますので、そちらより会員登録をお願いいたします。`;
         const actions = [
             {
                 type: 'uri',
