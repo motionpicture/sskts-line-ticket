@@ -72,8 +72,8 @@ export default async (req: Request, res: Response, next: NextFunction) => {
 
 export async function sendLoginButton(user: User) {
     // tslint:disable-next-line:no-multiline-string
-    let text = `ログインしてください。一度ログイン後、顔写真を登録すると、次回からFace Loginを使用できます。
-また、会員未登録の方は、「Sign In」のリンク先に「Sign Up」のリンクがございますので、そちらより会員登録をお願いいたします。`;
+    let text = `ログインしてください。一度ログイン後、顔写真を登録すると次回からFace Loginを使用できます。
+また、会員登録は「Sign In」のリンク先の「Sign Up」リンクより行えます。`;
     const actions: any[] = [
         {
             type: 'uri',
