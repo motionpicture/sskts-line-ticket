@@ -5,7 +5,6 @@
 
 import * as sskts from '@motionpicture/sskts-domain';
 import * as bodyParser from 'body-parser';
-import * as createDebug from 'debug';
 import * as express from 'express';
 
 import errorHandler from './middlewares/errorHandler';
@@ -13,8 +12,6 @@ import notFoundHandler from './middlewares/notFoundHandler';
 import session from './middlewares/session';
 
 import mongooseConnectionOptions from '../mongooseConnectionOptions';
-
-const debug = createDebug('sskts-line-ticket:*');
 
 const app = express();
 
