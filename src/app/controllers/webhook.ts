@@ -59,6 +59,11 @@ export async function message(event: LINE.IWebhookEvent, user: User) {
                         await MessageController.startIndexingFace(userId);
                         break;
 
+                    // 友達決済承認ワンタイムメッセージ
+                    case /^FriendPayToken/.test(messageText):
+                        await MessageController.askConfirmationOfFriendPay(user);
+                        break;
+
                     default:
                         // 予約照会方法をアドバイス
                         await MessageController.pushHowToUse(userId);
@@ -116,6 +121,16 @@ export async function postback(event: LINE.IWebhookEvent, user: User) {
             // 注文確定
             case 'confirmOrder':
                 await PostbackController.confirmOrder(user, <string>data.transactionId);
+                break;
+
+            // 友達決済承認確定
+            case 'confirmFriendPay':
+                await PostbackController.confirmFriendPay(user, <string>data.transactionId);
+                break;
+
+            // 友達決済承認確定
+            case 'continueTransactionAfterFriendPayConfirmation':
+                await PostbackController.choosePaymentMethod(user, '', <string>data.transactionId);
                 break;
 
             default:

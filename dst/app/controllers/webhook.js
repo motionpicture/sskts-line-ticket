@@ -56,6 +56,10 @@ function message(event, user) {
                         case /^顔写真登録$/.test(messageText):
                             yield MessageController.startIndexingFace(userId);
                             break;
+                        // 友達決済承認ワンタイムメッセージ
+                        case /^FriendPayToken/.test(messageText):
+                            yield MessageController.askConfirmationOfFriendPay(user);
+                            break;
                         default:
                             // 予約照会方法をアドバイス
                             yield MessageController.pushHowToUse(userId);
@@ -106,6 +110,14 @@ function postback(event, user) {
                 // 注文確定
                 case 'confirmOrder':
                     yield PostbackController.confirmOrder(user, data.transactionId);
+                    break;
+                // 友達決済承認確定
+                case 'confirmFriendPay':
+                    yield PostbackController.confirmFriendPay(user, data.transactionId);
+                    break;
+                // 友達決済承認確定
+                case 'continueTransactionAfterFriendPayConfirmation':
+                    yield PostbackController.choosePaymentMethod(user, '', data.transactionId);
                     break;
                 default:
             }

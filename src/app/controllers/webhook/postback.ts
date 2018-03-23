@@ -259,6 +259,11 @@ export async function createTmpReservation(user: User, eventIdentifier: string) 
     debug('seatReservationAuthorization:', seatReservationAuthorization);
     await LINE.pushMessage(user.userId, `座席 ${selectedSeatCode} を確保しました。`);
 
+    const LINE_ID = '@qef9940v';
+    const friendMessage = `FriendPayToken-${moment().unix()}`;
+    const message = encodeURIComponent(`僕の代わりに決済をお願いできますか？よければ、下のリンクを押してそのままメッセージを送信してください。
+line://oaMessage/${LINE_ID}/?${friendMessage}`);
+
     await request.post({
         simple: false,
         url: 'https://api.line.me/v2/bot/message/push',
@@ -273,12 +278,17 @@ export async function createTmpReservation(user: User, eventIdentifier: string) 
                     template: {
                         type: 'buttons',
                         title: '決済方法選択',
-                        text: '決済方法を選択してください。',
+                        text: '決済方法を選択してください。Friend Payの場合、ボタンを押して友達を選択してください。',
                         actions: [
                             {
                                 type: 'postback',
                                 label: 'Pecorino',
                                 data: `action=choosePaymentMethod&paymentMethod=Pecorino&transactionId=${transaction.id}`
+                            },
+                            {
+                                type: 'uri',
+                                label: 'Friend Pay',
+                                uri: `line://msg/text/?${message}`
                             }
                         ]
                     }
@@ -451,6 +461,51 @@ ${order.price}
                         }),
                         imageAspectRatio: 'square'
                         // imageSize: 'cover'
+                    }
+                }
+            ]
+        }
+    }).promise();
+}
+
+/**
+ * 友達決済を承認確定
+ * @param user LINEユーザー
+ * @param transactionId 取引ID
+ */
+export async function confirmFriendPay(user: User, transactionId: string) {
+    const friendUserId = 'U28fba84b4008d60291fc861e2562b34f';
+
+    await LINE.pushMessage(user.userId, '残高を確認しています...');
+
+    await LINE.pushMessage(user.userId, '友達決済を承認しました。');
+
+    await request.post({
+        simple: false,
+        url: 'https://api.line.me/v2/bot/message/push',
+        auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+        json: true,
+        body: {
+            to: friendUserId,
+            messages: [
+                {
+                    type: 'template',
+                    altText: 'This is a buttons template',
+                    template: {
+                        type: 'confirm',
+                        text: '友達決済の承認が確認できました。取引を続行しますか?',
+                        actions: [
+                            {
+                                type: 'postback',
+                                label: 'Yes',
+                                data: `action=continueTransactionAfterFriendPayConfirmation&transactionId=${transactionId}`
+                            },
+                            {
+                                type: 'postback',
+                                label: 'No',
+                                data: `action=cancelTransactionAfterFriendPayConfirmation&transactionId=${transactionId}`
+                            }
+                        ]
                     }
                 }
             ]

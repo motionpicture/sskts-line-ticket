@@ -72,6 +72,46 @@ function startIndexingFace(userId) {
 }
 exports.startIndexingFace = startIndexingFace;
 /**
+ * 友達決済承認確認
+ */
+function askConfirmationOfFriendPay(user) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const transactionId = '';
+        yield request.post({
+            simple: false,
+            url: 'https://api.line.me/v2/bot/message/push',
+            auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+            json: true,
+            body: {
+                to: user.userId,
+                messages: [
+                    {
+                        type: 'template',
+                        altText: 'This is a buttons template',
+                        template: {
+                            type: 'confirm',
+                            text: '本当に友達決済を承認しますか?',
+                            actions: [
+                                {
+                                    type: 'postback',
+                                    label: 'Yes',
+                                    data: `action=confirmFriendPay&transactionId=${transactionId}`
+                                },
+                                {
+                                    type: 'postback',
+                                    label: 'No',
+                                    data: `action=rejectFriendPay&transactionId=${transactionId}`
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }).promise();
+    });
+}
+exports.askConfirmationOfFriendPay = askConfirmationOfFriendPay;
+/**
  * 予約番号or電話番号のボタンを送信する
  * @export
  * @function

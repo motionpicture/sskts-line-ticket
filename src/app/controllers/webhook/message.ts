@@ -65,6 +65,45 @@ export async function startIndexingFace(userId: string) {
 }
 
 /**
+ * 友達決済承認確認
+ */
+export async function askConfirmationOfFriendPay(user: User) {
+    const transactionId = '';
+
+    await request.post({
+        simple: false,
+        url: 'https://api.line.me/v2/bot/message/push',
+        auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+        json: true,
+        body: {
+            to: user.userId,
+            messages: [
+                {
+                    type: 'template',
+                    altText: 'This is a buttons template',
+                    template: {
+                        type: 'confirm',
+                        text: '本当に友達決済を承認しますか?',
+                        actions: [
+                            {
+                                type: 'postback',
+                                label: 'Yes',
+                                data: `action=confirmFriendPay&transactionId=${transactionId}`
+                            },
+                            {
+                                type: 'postback',
+                                label: 'No',
+                                data: `action=rejectFriendPay&transactionId=${transactionId}`
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }).promise();
+}
+
+/**
  * 予約番号or電話番号のボタンを送信する
  * @export
  * @function

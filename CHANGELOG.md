@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Pecorino決済での注文フロープロトタイプを追加。
 - face loginを追加。
 - 会員登録ボタンを表示。
+- Friend Payフローを追加。
 
 ### Changed
 
