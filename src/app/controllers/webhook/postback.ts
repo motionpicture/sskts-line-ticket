@@ -260,7 +260,12 @@ export async function createTmpReservation(user: User, eventIdentifier: string) 
     await LINE.pushMessage(user.userId, `座席 ${selectedSeatCode} を確保しました。`);
 
     const LINE_ID = '@qef9940v';
-    const friendMessage = `FriendPayToken-${moment().unix()}`;
+    const friendPayInfo = {
+        transactionId: transaction.id,
+        userId: user.userId,
+        price: (<sskts.factory.action.authorize.seatReservation.IResult>seatReservationAuthorization.result).price
+    };
+    const friendMessage = `FriendPayToken.${user.signFriendPayInfo(friendPayInfo)}`;
     const message = encodeURIComponent(`僕の代わりに決済をお願いできますか？よければ、下のリンクを押してそのままメッセージを送信してください。
 line://oaMessage/${LINE_ID}/?${friendMessage}`);
 
@@ -473,9 +478,10 @@ ${order.price}
  * @param user LINEユーザー
  * @param transactionId 取引ID
  */
-export async function confirmFriendPay(user: User, transactionId: string) {
-    const friendUserId = 'U28fba84b4008d60291fc861e2562b34f';
+export async function confirmFriendPay(user: User, token: string) {
+    const friendPayInfo = await user.verifyFriendPayToken(token);
 
+    await LINE.pushMessage(user.userId, `${friendPayInfo.price}円の友達決済を受け付けます。`);
     await LINE.pushMessage(user.userId, '残高を確認しています...');
 
     await LINE.pushMessage(user.userId, '友達決済を承認しました。');
@@ -486,7 +492,7 @@ export async function confirmFriendPay(user: User, transactionId: string) {
         auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
         json: true,
         body: {
-            to: friendUserId,
+            to: friendPayInfo.userId,
             messages: [
                 {
                     type: 'template',
@@ -498,12 +504,12 @@ export async function confirmFriendPay(user: User, transactionId: string) {
                             {
                                 type: 'postback',
                                 label: 'Yes',
-                                data: `action=continueTransactionAfterFriendPayConfirmation&transactionId=${transactionId}`
+                                data: `action=continueTransactionAfterFriendPayConfirmation&transactionId=${friendPayInfo.transactionId}`
                             },
                             {
                                 type: 'postback',
                                 label: 'No',
-                                data: `action=cancelTransactionAfterFriendPayConfirmation&transactionId=${transactionId}`
+                                data: `action=cancelTransactionAfterFriendPayConfirmation&transactionId=${friendPayInfo.transactionId}`
                             }
                         ]
                     }

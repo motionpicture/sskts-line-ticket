@@ -74,9 +74,8 @@ exports.startIndexingFace = startIndexingFace;
 /**
  * 友達決済承認確認
  */
-function askConfirmationOfFriendPay(user) {
+function askConfirmationOfFriendPay(user, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        const transactionId = '';
         yield request.post({
             simple: false,
             url: 'https://api.line.me/v2/bot/message/push',
@@ -95,12 +94,12 @@ function askConfirmationOfFriendPay(user) {
                                 {
                                     type: 'postback',
                                     label: 'Yes',
-                                    data: `action=confirmFriendPay&transactionId=${transactionId}`
+                                    data: `action=confirmFriendPay&token=${token}`
                                 },
                                 {
                                     type: 'postback',
                                     label: 'No',
-                                    data: `action=rejectFriendPay&transactionId=${transactionId}`
+                                    data: `action=rejectFriendPay&token=${token}`
                                 }
                             ]
                         }

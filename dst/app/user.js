@@ -188,6 +188,42 @@ class User {
         });
     }
     /**
+     * 友達決済トークンを`トークン化`する
+     */
+    // tslint:disable-next-line:prefer-function-over-method
+    signFriendPayInfo(friendPayInfo) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                jwt.sign(friendPayInfo, 'secret', (err, encoded) => {
+                    if (err instanceof Error) {
+                        reject(err);
+                    }
+                    else {
+                        resolve(encoded);
+                    }
+                });
+            });
+        });
+    }
+    /**
+     * 友達決済トークンを検証する
+     */
+    // tslint:disable-next-line:prefer-function-over-method
+    verifyFriendPayToken(token) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                jwt.verify(token, 'secret', (err, decoded) => {
+                    if (err instanceof Error) {
+                        reject(err);
+                    }
+                    else {
+                        resolve(decoded);
+                    }
+                });
+            });
+        });
+    }
+    /**
      * 顔画像を検証する
      * @param source 顔画像buffer
      */

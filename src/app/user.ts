@@ -85,6 +85,15 @@ if (REFRESH_TOKEN_EXPIRES_IN_SECONDS_ENV === undefined) {
 const REFRESH_TOKEN_EXPIRES_IN_SECONDS = parseInt(REFRESH_TOKEN_EXPIRES_IN_SECONDS_ENV, 10);
 
 /**
+ * 友達決済情報
+ */
+export interface IFriendPayInfo {
+    transactionId: string;
+    userId: string;
+    price: number;
+}
+
+/**
  * LINEユーザー
  * @class
  * @see https://aws.amazon.com/blogs/mobile/integrating-amazon-cognito-user-pools-with-api-gateway/
@@ -243,6 +252,38 @@ export default class User {
 
     public async deleteCallbackState() {
         await redisClient.del(`line-ticket.callbackState.${this.userId}`);
+    }
+
+    /**
+     * 友達決済トークンを`トークン化`する
+     */
+    // tslint:disable-next-line:prefer-function-over-method
+    public async signFriendPayInfo(friendPayInfo: IFriendPayInfo) {
+        return new Promise<string>((resolve, reject) => {
+            jwt.sign(friendPayInfo, 'secret', (err: Error, encoded: string) => {
+                if (err instanceof Error) {
+                    reject(err);
+                } else {
+                    resolve(encoded);
+                }
+            });
+        });
+    }
+
+    /**
+     * 友達決済トークンを検証する
+     */
+    // tslint:disable-next-line:prefer-function-over-method
+    public async verifyFriendPayToken(token: string) {
+        return new Promise<IFriendPayInfo>((resolve, reject) => {
+            jwt.verify(token, 'secret', (err: Error, decoded: IFriendPayInfo) => {
+                if (err instanceof Error) {
+                    reject(err);
+                } else {
+                    resolve(decoded);
+                }
+            });
+        });
     }
 
     /**

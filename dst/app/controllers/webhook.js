@@ -57,8 +57,9 @@ function message(event, user) {
                             yield MessageController.startIndexingFace(userId);
                             break;
                         // 友達決済承認ワンタイムメッセージ
-                        case /^FriendPayToken/.test(messageText):
-                            yield MessageController.askConfirmationOfFriendPay(user);
+                        case /^FriendPayToken\./.test(messageText):
+                            const token = messageText.replace('FriendPayToken.', '');
+                            yield MessageController.askConfirmationOfFriendPay(user, token);
                             break;
                         default:
                             // 予約照会方法をアドバイス
@@ -113,7 +114,7 @@ function postback(event, user) {
                     break;
                 // 友達決済承認確定
                 case 'confirmFriendPay':
-                    yield PostbackController.confirmFriendPay(user, data.transactionId);
+                    yield PostbackController.confirmFriendPay(user, data.token);
                     break;
                 // 友達決済承認確定
                 case 'continueTransactionAfterFriendPayConfirmation':

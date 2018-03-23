@@ -60,8 +60,9 @@ export async function message(event: LINE.IWebhookEvent, user: User) {
                         break;
 
                     // 友達決済承認ワンタイムメッセージ
-                    case /^FriendPayToken/.test(messageText):
-                        await MessageController.askConfirmationOfFriendPay(user);
+                    case /^FriendPayToken\./.test(messageText):
+                        const token = messageText.replace('FriendPayToken.', '');
+                        await MessageController.askConfirmationOfFriendPay(user, token);
                         break;
 
                     default:
@@ -125,7 +126,7 @@ export async function postback(event: LINE.IWebhookEvent, user: User) {
 
             // 友達決済承認確定
             case 'confirmFriendPay':
-                await PostbackController.confirmFriendPay(user, <string>data.transactionId);
+                await PostbackController.confirmFriendPay(user, <string>data.token);
                 break;
 
             // 友達決済承認確定

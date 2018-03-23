@@ -249,7 +249,12 @@ function createTmpReservation(user, eventIdentifier) {
         debug('seatReservationAuthorization:', seatReservationAuthorization);
         yield LINE.pushMessage(user.userId, `座席 ${selectedSeatCode} を確保しました。`);
         const LINE_ID = '@qef9940v';
-        const friendMessage = `FriendPayToken-${moment().unix()}`;
+        const friendPayInfo = {
+            transactionId: transaction.id,
+            userId: user.userId,
+            price: seatReservationAuthorization.result.price
+        };
+        const friendMessage = `FriendPayToken.${user.signFriendPayInfo(friendPayInfo)}`;
         const message = encodeURIComponent(`僕の代わりに決済をお願いできますか？よければ、下のリンクを押してそのままメッセージを送信してください。
 line://oaMessage/${LINE_ID}/?${friendMessage}`);
         yield request.post({
@@ -455,9 +460,10 @@ exports.confirmOrder = confirmOrder;
  * @param user LINEユーザー
  * @param transactionId 取引ID
  */
-function confirmFriendPay(user, transactionId) {
+function confirmFriendPay(user, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        const friendUserId = 'U28fba84b4008d60291fc861e2562b34f';
+        const friendPayInfo = yield user.verifyFriendPayToken(token);
+        yield LINE.pushMessage(user.userId, `${friendPayInfo.price}円の友達決済を受け付けます。`);
         yield LINE.pushMessage(user.userId, '残高を確認しています...');
         yield LINE.pushMessage(user.userId, '友達決済を承認しました。');
         yield request.post({
@@ -466,7 +472,7 @@ function confirmFriendPay(user, transactionId) {
             auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
             json: true,
             body: {
-                to: friendUserId,
+                to: friendPayInfo.userId,
                 messages: [
                     {
                         type: 'template',
@@ -478,12 +484,12 @@ function confirmFriendPay(user, transactionId) {
                                 {
                                     type: 'postback',
                                     label: 'Yes',
-                                    data: `action=continueTransactionAfterFriendPayConfirmation&transactionId=${transactionId}`
+                                    data: `action=continueTransactionAfterFriendPayConfirmation&transactionId=${friendPayInfo.transactionId}`
                                 },
                                 {
                                     type: 'postback',
                                     label: 'No',
-                                    data: `action=cancelTransactionAfterFriendPayConfirmation&transactionId=${transactionId}`
+                                    data: `action=cancelTransactionAfterFriendPayConfirmation&transactionId=${friendPayInfo.transactionId}`
                                 }
                             ]
                         }
