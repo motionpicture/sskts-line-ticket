@@ -60,7 +60,7 @@ export async function message(event: LINE.IWebhookEvent, user: User) {
                         break;
 
                     // 友達決済承認ワンタイムメッセージ
-                    case /^FriendPayToken\./.test(messageText):
+                    case /^FriendPayToken/.test(messageText):
                         const token = messageText.replace('FriendPayToken.', '');
                         await MessageController.askConfirmationOfFriendPay(user, token);
                         break;

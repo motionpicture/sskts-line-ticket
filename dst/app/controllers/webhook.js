@@ -57,7 +57,7 @@ function message(event, user) {
                             yield MessageController.startIndexingFace(userId);
                             break;
                         // 友達決済承認ワンタイムメッセージ
-                        case /^FriendPayToken\./.test(messageText):
+                        case /^FriendPayToken/.test(messageText):
                             const token = messageText.replace('FriendPayToken.', '');
                             yield MessageController.askConfirmationOfFriendPay(user, token);
                             break;
