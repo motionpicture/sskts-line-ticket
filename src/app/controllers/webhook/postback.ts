@@ -303,35 +303,44 @@ line://oaMessage/${LINE_ID}/?${friendMessage}`);
     }).promise();
 }
 
-export async function choosePaymentMethod(user: User, paymentMethod: string, transactionId: string) {
-    debug('checking balance...', paymentMethod, transactionId);
-    await LINE.pushMessage(user.userId, '残高を確認しています...');
+export type PaymentMethodType = 'Pecorino' | 'FriendPay';
 
+export async function choosePaymentMethod(user: User, paymentMethod: PaymentMethodType, transactionId: string, friendPayPrice: number) {
     const personService = new ssktsapi.service.Person({
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
     });
-    const contact = await personService.getContacts({ personId: 'me' });
-
     const placeOrderService = new ssktsapi.service.transaction.PlaceOrder({
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
     });
 
-    const actionRepo = new sskts.repository.Action(sskts.mongoose.connection);
-    let seatReservations = await actionRepo.findAuthorizeByTransactionId(transactionId);
-    seatReservations = seatReservations
-        .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
-        .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.seatReservation.ObjectType.SeatReservation);
-    const price = seatReservations[0].result.price;
+    let price: number;
 
-    const pecorinoAuthorization = await placeOrderService.createPecorinoAuthorization({
-        transactionId: transactionId,
-        price: price
-    });
-    debug('Pecorino残高確認済', pecorinoAuthorization);
-    await LINE.pushMessage(user.userId, '残高の確認がとれました。');
+    if (paymentMethod === 'Pecorino') {
+        debug('checking balance...', paymentMethod, transactionId);
+        await LINE.pushMessage(user.userId, '残高を確認しています...');
 
+        const actionRepo = new sskts.repository.Action(sskts.mongoose.connection);
+        let seatReservations = await actionRepo.findAuthorizeByTransactionId(transactionId);
+        seatReservations = seatReservations
+            .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
+            .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.seatReservation.ObjectType.SeatReservation);
+        price = seatReservations[0].result.price;
+
+        const pecorinoAuthorization = await placeOrderService.createPecorinoAuthorization({
+            transactionId: transactionId,
+            price: price
+        });
+        debug('Pecorino残高確認済', pecorinoAuthorization);
+        await LINE.pushMessage(user.userId, '残高の確認がとれました。');
+    } else if (paymentMethod === 'FriendPay') {
+        price = friendPayPrice;
+    } else {
+        throw new Error(`Unknown payment method ${paymentMethod}`);
+    }
+
+    const contact = await personService.getContacts({ personId: 'me' });
     await placeOrderService.setCustomerContact({
         transactionId: transactionId,
         contact: contact
@@ -348,7 +357,7 @@ ${contact.telephone}
 ------------
 決済方法
 ------------
-Pecorino
+${paymentMethod}
 ${price} JPY
 `);
 
@@ -484,6 +493,24 @@ export async function confirmFriendPay(user: User, token: string) {
     await LINE.pushMessage(user.userId, `${friendPayInfo.price}円の友達決済を受け付けます。`);
     await LINE.pushMessage(user.userId, '残高を確認しています...');
 
+    const placeOrderService = new ssktsapi.service.transaction.PlaceOrder({
+        endpoint: <string>process.env.API_ENDPOINT,
+        auth: user.authClient
+    });
+
+    const actionRepo = new sskts.repository.Action(sskts.mongoose.connection);
+    let seatReservations = await actionRepo.findAuthorizeByTransactionId(friendPayInfo.transactionId);
+    seatReservations = seatReservations
+        .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
+        .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.seatReservation.ObjectType.SeatReservation);
+    const price = seatReservations[0].result.price;
+
+    const pecorinoAuthorization = await placeOrderService.createPecorinoAuthorization({
+        transactionId: friendPayInfo.transactionId,
+        price: price
+    });
+    debug('Pecorino残高確認済', pecorinoAuthorization);
+    await LINE.pushMessage(user.userId, '残高の確認がとれました。');
     await LINE.pushMessage(user.userId, '友達決済を承認しました。');
 
     await request.post({
@@ -504,12 +531,14 @@ export async function confirmFriendPay(user: User, token: string) {
                             {
                                 type: 'postback',
                                 label: 'Yes',
-                                data: `action=continueTransactionAfterFriendPayConfirmation&transactionId=${friendPayInfo.transactionId}`
+                                // tslint:disable-next-line:max-line-length
+                                data: `action=continueTransactionAfterFriendPayConfirmation&transactionId=${friendPayInfo.transactionId}&price=${friendPayInfo.price}`
                             },
                             {
                                 type: 'postback',
                                 label: 'No',
-                                data: `action=cancelTransactionAfterFriendPayConfirmation&transactionId=${friendPayInfo.transactionId}`
+                                // tslint:disable-next-line:max-line-length
+                                data: `action=cancelTransactionAfterFriendPayConfirmation&transactionId=${friendPayInfo.transactionId}&price=${friendPayInfo.price}`
                             }
                         ]
                     }

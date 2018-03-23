@@ -107,7 +107,7 @@ function postback(event, user) {
                     break;
                 // 決済方法選択
                 case 'choosePaymentMethod':
-                    yield PostbackController.choosePaymentMethod(user, data.paymentMethod, data.transactionId);
+                    yield PostbackController.choosePaymentMethod(user, data.paymentMethod, data.transactionId, 0);
                     break;
                 // 注文確定
                 case 'confirmOrder':
@@ -119,7 +119,7 @@ function postback(event, user) {
                     break;
                 // 友達決済承認確定
                 case 'continueTransactionAfterFriendPayConfirmation':
-                    yield PostbackController.choosePaymentMethod(user, '', data.transactionId);
+                    yield PostbackController.choosePaymentMethod(user, 'FriendPay', data.transactionId, parseInt(data.price, 10));
                     break;
                 default:
             }
