@@ -70,6 +70,7 @@ function message(event, user) {
                     yield ImageMessageController.indexFace(user, event.message.id);
                     break;
                 default:
+                    throw new Error(`Unknown message type ${event.message.type}`);
             }
         }
         catch (error) {

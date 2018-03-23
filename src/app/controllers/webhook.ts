@@ -78,6 +78,7 @@ export async function message(event: LINE.IWebhookEvent, user: User) {
                 break;
 
             default:
+                throw new Error(`Unknown message type ${event.message.type}`);
         }
     } catch (error) {
         // エラーメッセージ表示
