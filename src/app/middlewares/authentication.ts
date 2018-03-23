@@ -88,10 +88,15 @@ export async function sendLoginButton(user: User) {
     // リフレッシュトークン保管済、かつ、顔画像登録済であればFace Login使用可能
     if (refreshToken !== null && faces.length > 0) {
         text = 'ログインしてください。';
+        // actions.push({
+        //     type: 'postback',
+        //     label: 'Face Login',
+        //     data: `action=loginByFace&state=${user.state}`
+        // });
         actions.push({
-            type: 'postback',
+            type: 'uri',
             label: 'Face Login',
-            data: `action=loginByFace&state=${user.state}`
+            uri: 'line://nv/camera/'
         });
     }
 

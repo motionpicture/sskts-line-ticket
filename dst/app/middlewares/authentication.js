@@ -87,10 +87,15 @@ function sendLoginButton(user) {
         // リフレッシュトークン保管済、かつ、顔画像登録済であればFace Login使用可能
         if (refreshToken !== null && faces.length > 0) {
             text = 'ログインしてください。';
+            // actions.push({
+            //     type: 'postback',
+            //     label: 'Face Login',
+            //     data: `action=loginByFace&state=${user.state}`
+            // });
             actions.push({
-                type: 'postback',
+                type: 'uri',
                 label: 'Face Login',
-                data: `action=loginByFace&state=${user.state}`
+                uri: 'line://nv/camera/'
             });
         }
         // 会員として未使用であれば会員登録ボタン表示
