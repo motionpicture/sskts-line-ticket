@@ -260,12 +260,12 @@ export async function createTmpReservation(user: User, eventIdentifier: string) 
     await LINE.pushMessage(user.userId, `座席 ${selectedSeatCode} を確保しました。`);
 
     const LINE_ID = '@qef9940v';
-    const friendPayInfo = {
+    const token = await user.signFriendPayInfo({
         transactionId: transaction.id,
         userId: user.userId,
         price: (<sskts.factory.action.authorize.seatReservation.IResult>seatReservationAuthorization.result).price
-    };
-    const friendMessage = `FriendPayToken.${user.signFriendPayInfo(friendPayInfo)}`;
+    });
+    const friendMessage = `FriendPayToken.${token}`;
     const message = encodeURIComponent(`僕の代わりに決済をお願いできますか？よければ、下のリンクを押してそのままメッセージを送信してください。
 line://oaMessage/${LINE_ID}/?${friendMessage}`);
 
