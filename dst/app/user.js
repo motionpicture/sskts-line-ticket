@@ -188,7 +188,7 @@ class User {
         });
     }
     /**
-     * 友達決済トークンを`トークン化`する
+     * 友達決済トークンをトークン化する
      */
     // tslint:disable-next-line:prefer-function-over-method
     signFriendPayInfo(friendPayInfo) {
@@ -210,6 +210,42 @@ class User {
      */
     // tslint:disable-next-line:prefer-function-over-method
     verifyFriendPayToken(token) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                jwt.verify(token, 'secret', (err, decoded) => {
+                    if (err instanceof Error) {
+                        reject(err);
+                    }
+                    else {
+                        resolve(decoded);
+                    }
+                });
+            });
+        });
+    }
+    /**
+     * 友達決済トークンをトークン化する
+     */
+    // tslint:disable-next-line:prefer-function-over-method
+    signTransferMoneyInfo(transferMoneyInfo) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                jwt.sign(transferMoneyInfo, 'secret', (err, encoded) => {
+                    if (err instanceof Error) {
+                        reject(err);
+                    }
+                    else {
+                        resolve(encoded);
+                    }
+                });
+            });
+        });
+    }
+    /**
+     * 友達決済トークンを検証する
+     */
+    // tslint:disable-next-line:prefer-function-over-method
+    verifyTransferMoneyToken(token) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 jwt.verify(token, 'secret', (err, decoded) => {

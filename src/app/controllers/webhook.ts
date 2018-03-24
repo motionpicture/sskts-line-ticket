@@ -65,6 +65,17 @@ export async function message(event: LINE.IWebhookEvent, user: User) {
                         await MessageController.askConfirmationOfFriendPay(user, token);
                         break;
 
+                    // おこづかいをもらう
+                    case /^おこづかい$/.test(messageText):
+                        await MessageController.selectWhomAskForMoney(user);
+                        break;
+
+                    // おこづかい承認メッセージ
+                    case /^TransferMoneyToken/.test(messageText):
+                        const transferMoneyToken = messageText.replace('TransferMoneyToken.', '');
+                        await MessageController.askConfirmationOfTransferMoney(user, transferMoneyToken);
+                        break;
+
                     default:
                         // 予約照会方法をアドバイス
                         await MessageController.pushHowToUse(userId);
@@ -129,6 +140,11 @@ export async function postback(event: LINE.IWebhookEvent, user: User) {
             // 友達決済承認確定
             case 'confirmFriendPay':
                 await PostbackController.confirmFriendPay(user, <string>data.token);
+                break;
+
+            // おこづかい承認確定
+            case 'confirmTransferMoney':
+                await PostbackController.confirmTransferMoney(user, <string>data.token);
                 break;
 
             // 友達決済承認確定

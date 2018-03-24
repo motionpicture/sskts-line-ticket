@@ -549,6 +549,46 @@ export async function confirmFriendPay(user: User, token: string) {
 }
 
 /**
+ * おこづかい承認確定
+ * @param user LINEユーザー
+ * @param token 金額転送情報トークン
+ */
+export async function confirmTransferMoney(user: User, token: string) {
+    const transferMoneyInfo = await user.verifyTransferMoneyToken(token);
+
+    await LINE.pushMessage(user.userId, `${transferMoneyInfo.name} ${transferMoneyInfo.accountId}にお金を転送します...`);
+
+    // const placeOrderService = new ssktsapi.service.transaction.PlaceOrder({
+    //     endpoint: <string>process.env.API_ENDPOINT,
+    //     auth: user.authClient
+    // });
+
+    // const actionRepo = new sskts.repository.Action(sskts.mongoose.connection);
+    // let seatReservations = await actionRepo.findAuthorizeByTransactionId(friendPayInfo.transactionId);
+    // seatReservations = seatReservations
+    //     .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
+    //     .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.seatReservation.ObjectType.SeatReservation);
+    // const price = seatReservations[0].result.price;
+
+    // const pecorinoAuthorization = await placeOrderService.createPecorinoAuthorization({
+    //     transactionId: friendPayInfo.transactionId,
+    //     price: price
+    // });
+    // debug('Pecorino残高確認済', pecorinoAuthorization);
+    // await LINE.pushMessage(user.userId, '残高の確認がとれました。');
+    await LINE.pushMessage(user.userId, '転送が完了しました。');
+
+    const personService = new ssktsapi.service.Person({
+        endpoint: <string>process.env.API_ENDPOINT,
+        auth: user.authClient
+    });
+    const contact = await personService.getContacts({ personId: 'me' });
+
+    // 振込先に通知
+    await LINE.pushMessage(transferMoneyInfo.userId, `${contact.familyName} ${contact.givenName}からおこづかいが振り込まれました。`);
+}
+
+/**
  * 取引検索(csvダウンロード)
  * @export
  * @function

@@ -94,6 +94,15 @@ export interface IFriendPayInfo {
 }
 
 /**
+ * 友達決済情報
+ */
+export interface ITransferMoneyInfo {
+    userId: string;
+    accountId: string;
+    name: string;
+}
+
+/**
  * LINEユーザー
  * @class
  * @see https://aws.amazon.com/blogs/mobile/integrating-amazon-cognito-user-pools-with-api-gateway/
@@ -255,7 +264,7 @@ export default class User {
     }
 
     /**
-     * 友達決済トークンを`トークン化`する
+     * 友達決済トークンをトークン化する
      */
     // tslint:disable-next-line:prefer-function-over-method
     public async signFriendPayInfo(friendPayInfo: IFriendPayInfo) {
@@ -277,6 +286,38 @@ export default class User {
     public async verifyFriendPayToken(token: string) {
         return new Promise<IFriendPayInfo>((resolve, reject) => {
             jwt.verify(token, 'secret', (err: Error, decoded: IFriendPayInfo) => {
+                if (err instanceof Error) {
+                    reject(err);
+                } else {
+                    resolve(decoded);
+                }
+            });
+        });
+    }
+
+    /**
+     * 友達決済トークンをトークン化する
+     */
+    // tslint:disable-next-line:prefer-function-over-method
+    public async signTransferMoneyInfo(transferMoneyInfo: ITransferMoneyInfo) {
+        return new Promise<string>((resolve, reject) => {
+            jwt.sign(transferMoneyInfo, 'secret', (err: Error, encoded: string) => {
+                if (err instanceof Error) {
+                    reject(err);
+                } else {
+                    resolve(encoded);
+                }
+            });
+        });
+    }
+
+    /**
+     * 友達決済トークンを検証する
+     */
+    // tslint:disable-next-line:prefer-function-over-method
+    public async verifyTransferMoneyToken(token: string) {
+        return new Promise<ITransferMoneyInfo>((resolve, reject) => {
+            jwt.verify(token, 'secret', (err: Error, decoded: ITransferMoneyInfo) => {
                 if (err instanceof Error) {
                     reject(err);
                 } else {

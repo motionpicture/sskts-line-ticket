@@ -111,6 +111,97 @@ function askConfirmationOfFriendPay(user, token) {
 }
 exports.askConfirmationOfFriendPay = askConfirmationOfFriendPay;
 /**
+ * おこづかい承認確認
+ */
+function askConfirmationOfTransferMoney(user, transferMoneyToken) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const transferMoneyInfo = yield user.verifyTransferMoneyToken(transferMoneyToken);
+        yield request.post({
+            simple: false,
+            url: 'https://api.line.me/v2/bot/message/push',
+            auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+            json: true,
+            body: {
+                to: user.userId,
+                messages: [
+                    {
+                        type: 'template',
+                        altText: 'This is a buttons template',
+                        template: {
+                            type: 'confirm',
+                            text: `${transferMoneyInfo.name}がおこづかいを要求しています。承認しますか？`,
+                            actions: [
+                                {
+                                    type: 'postback',
+                                    label: 'Yes',
+                                    data: `action=confirmTransferMoney&token=${transferMoneyToken}`
+                                },
+                                {
+                                    type: 'postback',
+                                    label: 'No',
+                                    data: `action=rejectTransferMoney&token=${transferMoneyToken}`
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }).promise();
+    });
+}
+exports.askConfirmationOfTransferMoney = askConfirmationOfTransferMoney;
+/**
+ * 誰からお金をもらうか選択する
+ */
+function selectWhomAskForMoney(user) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const LINE_ID = '@qef9940v';
+        const personService = new ssktsapi.service.Person({
+            endpoint: process.env.API_ENDPOINT,
+            auth: user.authClient
+        });
+        const account = yield personService.findAccount({ personId: 'me' });
+        const contact = yield personService.getContacts({ personId: 'me' });
+        const token = yield user.signTransferMoneyInfo({
+            userId: user.userId,
+            accountId: account.id,
+            name: `${contact.familyName} ${contact.givenName}`
+        });
+        const friendMessage = `TransferMoneyToken.${token}`;
+        const message = encodeURIComponent(`おこづかいちょーだい！
+よければ下のリンクを押してそのままメッセージを送信してね。
+line://oaMessage/${LINE_ID}/?${friendMessage}`);
+        yield request.post({
+            simple: false,
+            url: 'https://api.line.me/v2/bot/message/push',
+            auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+            json: true,
+            body: {
+                to: user.userId,
+                messages: [
+                    {
+                        type: 'template',
+                        altText: 'This is a buttons template',
+                        template: {
+                            type: 'buttons',
+                            title: 'おこづかいをもらう',
+                            text: '友達を選択してメッセージを送信しましょう。',
+                            actions: [
+                                {
+                                    type: 'uri',
+                                    label: '誰からもらう？',
+                                    uri: `line://msg/text/?${message}`
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }).promise();
+    });
+}
+exports.selectWhomAskForMoney = selectWhomAskForMoney;
+/**
  * 予約番号or電話番号のボタンを送信する
  * @export
  * @function

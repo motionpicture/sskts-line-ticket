@@ -61,6 +61,15 @@ function message(event, user) {
                             const token = messageText.replace('FriendPayToken.', '');
                             yield MessageController.askConfirmationOfFriendPay(user, token);
                             break;
+                        // おこづかいをもらう
+                        case /^おこづかい$/.test(messageText):
+                            yield MessageController.selectWhomAskForMoney(user);
+                            break;
+                        // おこづかい承認メッセージ
+                        case /^TransferMoneyToken/.test(messageText):
+                            const transferMoneyToken = messageText.replace('TransferMoneyToken.', '');
+                            yield MessageController.askConfirmationOfTransferMoney(user, transferMoneyToken);
+                            break;
                         default:
                             // 予約照会方法をアドバイス
                             yield MessageController.pushHowToUse(userId);
@@ -116,6 +125,10 @@ function postback(event, user) {
                 // 友達決済承認確定
                 case 'confirmFriendPay':
                     yield PostbackController.confirmFriendPay(user, data.token);
+                    break;
+                // おこづかい承認確定
+                case 'confirmTransferMoney':
+                    yield PostbackController.confirmTransferMoney(user, data.token);
                     break;
                 // 友達決済承認確定
                 case 'continueTransactionAfterFriendPayConfirmation':

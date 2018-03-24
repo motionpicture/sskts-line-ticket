@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - face loginを追加。
 - 会員登録ボタンを表示。
 - Friend Payフローを追加。
+- おこづかいをもらうフローを追加。
 
 ### Changed
 
