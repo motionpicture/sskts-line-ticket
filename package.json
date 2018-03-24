@@ -11,6 +11,7 @@
   "config": {},
   "dependencies": {
     "@motionpicture/express-middleware": "^0.1.0",
+    "@motionpicture/pecorino-api-nodejs-client": "0.0.0-alpha.2",
     "@motionpicture/sskts-api-nodejs-client": "^3.0.0",
     "@motionpicture/sskts-domain": "^24.0.2-alpha.0",
     "aws-sdk": "^2.199.0",

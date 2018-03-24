@@ -3,6 +3,7 @@
  * @namespace app.controllers.webhook.postback
  */
 
+import * as pecorinoapi from '@motionpicture/pecorino-api-nodejs-client';
 import * as ssktsapi from '@motionpicture/sskts-api-nodejs-client';
 import * as sskts from '@motionpicture/sskts-domain';
 import * as createDebug from 'debug';
@@ -19,6 +20,11 @@ const debug = createDebug('sskts-line-ticket:controller:webhook:postback');
 // const MESSAGE_TRANSACTION_NOT_FOUND = '該当取引はありません';
 
 const customsearch = google.customsearch('v1');
+
+const PECORINO_API_ENDPOINT = process.env.PECORINO_API_ENDPOINT;
+const PECORINO_CLIENT_ID = process.env.PECORINO_CLIENT_ID;
+const PECORINO_CLIENT_SECRET = process.env.PECORINO_CLIENT_SECRET;
+const PECORINO_AUTHORIZE_SERVER_DOMAIN = process.env.PECORINO_AUTHORIZE_SERVER_DOMAIN;
 
 /**
  * 購入番号で取引を検索する
@@ -556,26 +562,66 @@ export async function confirmFriendPay(user: User, token: string) {
 export async function confirmTransferMoney(user: User, token: string) {
     const transferMoneyInfo = await user.verifyTransferMoneyToken(token);
 
-    await LINE.pushMessage(user.userId, `${transferMoneyInfo.name} ${transferMoneyInfo.accountId}にお金を転送します...`);
+    await LINE.pushMessage(user.userId, `${transferMoneyInfo.name}に振込を実行します...`);
 
-    // const placeOrderService = new ssktsapi.service.transaction.PlaceOrder({
-    //     endpoint: <string>process.env.API_ENDPOINT,
-    //     auth: user.authClient
-    // });
+    if (PECORINO_API_ENDPOINT === undefined) {
+        throw new Error('PECORINO_API_ENDPOINT undefined.');
+    }
+    if (PECORINO_CLIENT_ID === undefined) {
+        throw new Error('PECORINO_CLIENT_ID undefined.');
+    }
+    if (PECORINO_CLIENT_SECRET === undefined) {
+        throw new Error('PECORINO_CLIENT_SECRET undefined.');
+    }
+    if (PECORINO_AUTHORIZE_SERVER_DOMAIN === undefined) {
+        throw new Error('PECORINO_AUTHORIZE_SERVER_DOMAIN undefined.');
+    }
 
-    // const actionRepo = new sskts.repository.Action(sskts.mongoose.connection);
-    // let seatReservations = await actionRepo.findAuthorizeByTransactionId(friendPayInfo.transactionId);
-    // seatReservations = seatReservations
-    //     .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
-    //     .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.seatReservation.ObjectType.SeatReservation);
-    // const price = seatReservations[0].result.price;
+    const auth = new pecorinoapi.auth.ClientCredentials({
+        domain: PECORINO_AUTHORIZE_SERVER_DOMAIN,
+        clientId: PECORINO_CLIENT_ID,
+        clientSecret: PECORINO_CLIENT_SECRET,
+        scopes: [],
+        state: ''
+    });
 
-    // const pecorinoAuthorization = await placeOrderService.createPecorinoAuthorization({
-    //     transactionId: friendPayInfo.transactionId,
-    //     price: price
-    // });
-    // debug('Pecorino残高確認済', pecorinoAuthorization);
-    // await LINE.pushMessage(user.userId, '残高の確認がとれました。');
+    const oauth2client = new pecorinoapi.auth.OAuth2({
+        domain: PECORINO_AUTHORIZE_SERVER_DOMAIN
+    });
+    oauth2client.setCredentials({
+        access_token: await user.authClient.getAccessToken()
+    });
+
+    const transferTransactionService4backend = new pecorinoapi.service.transaction.Transfer({
+        endpoint: PECORINO_API_ENDPOINT,
+        auth: auth
+    });
+    const transferTransactionService4frontend = new pecorinoapi.service.transaction.Transfer({
+        endpoint: PECORINO_API_ENDPOINT,
+        auth: oauth2client
+    });
+
+    const transaction = await transferTransactionService4frontend.start({
+        // tslint:disable-next-line:no-magic-numbers
+        expires: moment().add(10, 'minutes').toDate(),
+        recipient: {
+            typeOf: 'Person',
+            id: transferMoneyInfo.userId,
+            name: transferMoneyInfo.name,
+            url: ''
+        },
+        price: 100,
+        notes: 'LINEチケットおこづかい',
+        toAccountId: transferMoneyInfo.accountId
+    });
+    debug('transaction started.', transaction.id);
+    await LINE.pushMessage(user.userId, '残高の確認がとれました。');
+
+    // バックエンドで確定
+    await transferTransactionService4backend.confirm({
+        transactionId: transaction.id
+    });
+    debug('transaction confirmed.');
     await LINE.pushMessage(user.userId, '転送が完了しました。');
 
     const personService = new ssktsapi.service.Person({
