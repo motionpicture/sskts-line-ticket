@@ -35,12 +35,12 @@ function pushHowToUse(userId) {
 --------------------
 座席予約
 --------------------
-'予約'と入力
+'座席予約'と入力
 
 --------------------
 Pecorino残高照会
 --------------------
-'残高'と入力
+'口座残高'と入力
 
 --------------------
 Pecorino取引履歴検索
@@ -51,6 +51,11 @@ Pecorino取引履歴検索
 顔写真登録
 --------------------
 '顔写真登録'と入力
+
+--------------------
+おこづかいをもらう
+--------------------
+'おこづかい'と入力
 
 --------------------
 logout
@@ -126,19 +131,29 @@ function askConfirmationOfTransferMoney(user, transferMoneyToken) {
                 messages: [
                     {
                         type: 'template',
-                        altText: 'This is a buttons template',
+                        altText: 'おこづかい金額選択',
                         template: {
-                            type: 'confirm',
-                            text: `${transferMoneyInfo.name}がおこづかいを要求しています。承認しますか？`,
+                            type: 'buttons',
+                            text: `${transferMoneyInfo.name}がおこづかいを要求しています。いくらあげますか？`,
                             actions: [
                                 {
                                     type: 'postback',
-                                    label: 'Yes',
-                                    data: `action=confirmTransferMoney&token=${transferMoneyToken}`
+                                    label: '100円あげる',
+                                    data: `action=confirmTransferMoney&token=${transferMoneyToken}&price=100`
                                 },
                                 {
                                     type: 'postback',
-                                    label: 'No',
+                                    label: '1000円あげる',
+                                    data: `action=confirmTransferMoney&token=${transferMoneyToken}&price=1000`
+                                },
+                                {
+                                    type: 'postback',
+                                    label: '10000円あげる',
+                                    data: `action=confirmTransferMoney&token=${transferMoneyToken}&price=10000`
+                                },
+                                {
+                                    type: 'postback',
+                                    label: 'あげない',
                                     data: `action=rejectTransferMoney&token=${transferMoneyToken}`
                                 }
                             ]

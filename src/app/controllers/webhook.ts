@@ -144,7 +144,8 @@ export async function postback(event: LINE.IWebhookEvent, user: User) {
 
             // おこづかい承認確定
             case 'confirmTransferMoney':
-                await PostbackController.confirmTransferMoney(user, <string>data.token);
+                await PostbackController.confirmTransferMoney(
+                    user, <string>data.token, parseInt(<string>data.price, 10));
                 break;
 
             // 友達決済承認確定

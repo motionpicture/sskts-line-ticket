@@ -559,10 +559,10 @@ export async function confirmFriendPay(user: User, token: string) {
  * @param user LINEユーザー
  * @param token 金額転送情報トークン
  */
-export async function confirmTransferMoney(user: User, token: string) {
+export async function confirmTransferMoney(user: User, token: string, price: number) {
     const transferMoneyInfo = await user.verifyTransferMoneyToken(token);
 
-    await LINE.pushMessage(user.userId, `${transferMoneyInfo.name}に振込を実行します...`);
+    await LINE.pushMessage(user.userId, `${transferMoneyInfo.name}に${price}円の振込を実行します...`);
 
     if (PECORINO_API_ENDPOINT === undefined) {
         throw new Error('PECORINO_API_ENDPOINT undefined.');
@@ -610,7 +610,7 @@ export async function confirmTransferMoney(user: User, token: string) {
             name: transferMoneyInfo.name,
             url: ''
         },
-        price: 100,
+        price: price,
         notes: 'LINEチケットおこづかい',
         toAccountId: transferMoneyInfo.accountId
     });
@@ -631,7 +631,7 @@ export async function confirmTransferMoney(user: User, token: string) {
     const contact = await personService.getContacts({ personId: 'me' });
 
     // 振込先に通知
-    await LINE.pushMessage(transferMoneyInfo.userId, `${contact.familyName} ${contact.givenName}からおこづかいが振り込まれました。`);
+    await LINE.pushMessage(transferMoneyInfo.userId, `${contact.familyName} ${contact.givenName}から${price}円おこづかいが振り込まれました。`);
 }
 
 /**

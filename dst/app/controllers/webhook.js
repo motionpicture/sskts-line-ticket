@@ -128,7 +128,7 @@ function postback(event, user) {
                     break;
                 // おこづかい承認確定
                 case 'confirmTransferMoney':
-                    yield PostbackController.confirmTransferMoney(user, data.token);
+                    yield PostbackController.confirmTransferMoney(user, data.token, parseInt(data.price, 10));
                     break;
                 // 友達決済承認確定
                 case 'continueTransactionAfterFriendPayConfirmation':
