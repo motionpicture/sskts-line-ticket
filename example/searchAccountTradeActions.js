@@ -8,6 +8,7 @@ request.post(
             events: [
                 {
                     message: {
+                        type: 'text',
                         text: '口座取引履歴'
                     },
                     replyToken: '26d0dd0923a94583871ecd7e6efec8e2',

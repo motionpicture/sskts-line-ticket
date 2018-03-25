@@ -54,8 +54,8 @@ function pushHowToUse(userId) {
                                 },
                                 {
                                     type: 'message',
-                                    label: '口座残高を確認する',
-                                    text: 'チケット'
+                                    label: '口座を確認する',
+                                    text: '口座残高'
                                 },
                                 {
                                     type: 'message',
@@ -377,8 +377,39 @@ function findAccount(user) {
         });
         const account = yield personService.findAccount({ personId: 'me' });
         debug('account:', account);
-        yield LINE.pushMessage(user.userId, `残高:${account.balance}円
-売掛残高:${account.safeBalance}円`);
+        const text = util.format('口座ID: %s\n現在残高: %s\n引出可能残高: %s', account.id, parseInt(account.balance, 10).toLocaleString(), parseInt(account.safeBalance, 10).toLocaleString());
+        yield request.post({
+            simple: false,
+            url: 'https://api.line.me/v2/bot/message/push',
+            auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+            json: true,
+            body: {
+                to: user.userId,
+                messages: [
+                    {
+                        type: 'template',
+                        altText: 'How to use',
+                        template: {
+                            type: 'buttons',
+                            title: 'あなたのPecorino口座',
+                            text: text,
+                            actions: [
+                                {
+                                    type: 'message',
+                                    label: '取引履歴を確認する',
+                                    text: '口座取引履歴'
+                                },
+                                {
+                                    type: 'message',
+                                    label: 'おこづかいをもらう',
+                                    text: 'おこづかい'
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }).promise();
     });
 }
 exports.findAccount = findAccount;

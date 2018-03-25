@@ -8,7 +8,8 @@ request.post(
             events: [
                 {
                     message: {
-                        text: '残高'
+                        type: 'text',
+                        text: '口座残高'
                     },
                     replyToken: '26d0dd0923a94583871ecd7e6efec8e2',
                     source: {
