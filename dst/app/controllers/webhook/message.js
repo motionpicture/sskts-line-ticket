@@ -56,6 +56,11 @@ function pushHowToUse(userId) {
                                     type: 'message',
                                     label: 'おこづかいをもらう',
                                     text: 'おこづかい'
+                                },
+                                {
+                                    type: 'message',
+                                    label: '顔を登録する',
+                                    text: '顔写真登録'
                                 }
                             ]
                         }
