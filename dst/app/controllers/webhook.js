@@ -42,6 +42,9 @@ function message(event, user) {
                             yield MessageController.logout(user);
                             break;
                         case /^座席予約$/.test(messageText):
+                            yield MessageController.showSeatReservationMenu(user);
+                            break;
+                        case /^座席予約追加$/.test(messageText):
                             yield MessageController.askEventStartDate(userId);
                             break;
                         case /^チケット$/.test(messageText):

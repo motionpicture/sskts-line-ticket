@@ -38,13 +38,8 @@ export async function pushHowToUse(userId: string) {
                         actions: [
                             {
                                 type: 'message',
-                                label: '座席を予約する',
+                                label: '座席予約メニューを見る',
                                 text: '座席予約'
-                            },
-                            {
-                                type: 'message',
-                                label: '予約を確認する',
-                                text: 'チケット'
                             },
                             {
                                 type: 'message',
@@ -55,6 +50,44 @@ export async function pushHowToUse(userId: string) {
                                 type: 'message',
                                 label: 'おこづかいをもらう',
                                 text: 'おこづかい'
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }).promise();
+}
+
+/**
+ * 座席予約メニューを表示する
+ */
+export async function showSeatReservationMenu(user: User) {
+    await request.post({
+        simple: false,
+        url: 'https://api.line.me/v2/bot/message/push',
+        auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+        json: true,
+        body: {
+            to: user.userId,
+            messages: [
+                {
+                    type: 'template',
+                    altText: '座席予約メニュー',
+                    template: {
+                        type: 'buttons',
+                        title: '座席予約',
+                        text: 'ご用件はなんでしょう？',
+                        actions: [
+                            {
+                                type: 'message',
+                                label: '座席を予約する',
+                                text: '座席予約追加'
+                            },
+                            {
+                                type: 'message',
+                                label: '予約を確認する',
+                                text: 'チケット'
                             }
                         ]
                     }

@@ -41,6 +41,10 @@ export async function message(event: LINE.IWebhookEvent, user: User) {
                         break;
 
                     case /^座席予約$/.test(messageText):
+                        await MessageController.showSeatReservationMenu(user);
+                        break;
+
+                    case /^座席予約追加$/.test(messageText):
                         await MessageController.askEventStartDate(userId);
                         break;
 
