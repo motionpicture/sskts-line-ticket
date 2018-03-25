@@ -44,6 +44,10 @@ export async function message(event: LINE.IWebhookEvent, user: User) {
                         await MessageController.askEventStartDate(userId);
                         break;
 
+                    case /^チケット$/.test(messageText):
+                        await MessageController.searchTickets(user);
+                        break;
+
                     // 残高照会
                     case /^口座残高$/.test(messageText):
                         await MessageController.findAccount(user);

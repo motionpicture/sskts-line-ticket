@@ -44,6 +44,9 @@ function message(event, user) {
                         case /^座席予約$/.test(messageText):
                             yield MessageController.askEventStartDate(userId);
                             break;
+                        case /^チケット$/.test(messageText):
+                            yield MessageController.searchTickets(user);
+                            break;
                         // 残高照会
                         case /^口座残高$/.test(messageText):
                             yield MessageController.findAccount(user);

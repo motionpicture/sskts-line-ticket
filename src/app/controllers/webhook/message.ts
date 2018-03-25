@@ -18,46 +18,50 @@ const debug = createDebug('sskts-line-ticket:controller:webhook:message');
 /**
  * 使い方を送信する
  * @export
- * @function
- * @memberof app.controllers.webhook.message
  */
 export async function pushHowToUse(userId: string) {
-    // tslint:disable-next-line:no-multiline-string
-    const text = `How to use
-メニューボタンから操作することもできます。
-
---------------------
-座席予約
---------------------
-'座席予約'と入力
-
---------------------
-Pecorino残高照会
---------------------
-'口座残高'と入力
-
---------------------
-Pecorino取引履歴検索
---------------------
-'口座取引履歴'と入力
-
---------------------
-顔写真登録
---------------------
-'顔写真登録'と入力
-
---------------------
-おこづかいをもらう
---------------------
-'おこづかい'と入力
-
---------------------
-logout
---------------------
-'logout'と入力
-`;
-
-    await LINE.pushMessage(userId, text);
+    await request.post({
+        simple: false,
+        url: 'https://api.line.me/v2/bot/message/push',
+        auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+        json: true,
+        body: {
+            to: userId,
+            messages: [
+                {
+                    type: 'template',
+                    altText: 'How to use',
+                    template: {
+                        type: 'buttons',
+                        title: '何をしますか？',
+                        text: '画面下部メニューから操作することもできます。',
+                        actions: [
+                            {
+                                type: 'message',
+                                label: '座席を予約する',
+                                text: '座席予約'
+                            },
+                            {
+                                type: 'message',
+                                label: '予約を確認する',
+                                text: 'チケット'
+                            },
+                            {
+                                type: 'message',
+                                label: '口座残高を確認する',
+                                text: 'チケット'
+                            },
+                            {
+                                type: 'message',
+                                label: 'おこづかいをもらう',
+                                text: 'おこづかい'
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }).promise();
 }
 
 /**
@@ -288,6 +292,72 @@ export async function askReservationEventDate(userId: string, paymentNo: string)
             }
         }
     ).promise();
+}
+
+/**
+ * ユーザーのチケット(座席予約)を検索する
+ */
+export async function searchTickets(user: User) {
+    const personService = new ssktsapi.service.Person({
+        endpoint: <string>process.env.API_ENDPOINT,
+        auth: user.authClient
+    });
+    const ownershipInfos = await personService.searchReservationOwnerships({ personId: 'me' });
+
+    if (ownershipInfos.length === 0) {
+        await LINE.pushMessage(user.userId, '座席予約はありません。');
+    } else {
+        await request.post({
+            simple: false,
+            url: 'https://api.line.me/v2/bot/message/push',
+            auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+            json: true,
+            body: {
+                to: user.userId,
+                messages: [
+                    {
+                        type: 'template',
+                        altText: '座席予約チケット',
+                        template: {
+                            type: 'carousel',
+                            columns: ownershipInfos.map((ownershipInfo) => {
+                                const itemOffered = ownershipInfo.typeOfGood;
+                                // tslint:disable-next-line:max-line-length
+                                const qr = `https://chart.apis.google.com/chart?chs=300x300&cht=qr&chl=${itemOffered.reservedTicket.ticketToken}`;
+                                const text = util.format(
+                                    '%s-%s\n@%s\n%s',
+                                    moment(itemOffered.reservationFor.startDate).format('YY-MM-DD HH:mm'),
+                                    moment(itemOffered.reservationFor.endDate).format('HH:mm'),
+                                    // tslint:disable-next-line:max-line-length
+                                    `${itemOffered.reservationFor.superEvent.location.name.ja} ${itemOffered.reservationFor.location.name.ja}`,
+                                    // tslint:disable-next-line:max-line-length
+                                    `${itemOffered.reservedTicket.ticketedSeat.seatNumber} ${itemOffered.reservedTicket.coaTicketInfo.ticketName} ￥${itemOffered.reservedTicket.coaTicketInfo.salePrice}`
+                                );
+
+                                return {
+                                    thumbnailImageUrl: qr,
+                                    // imageBackgroundColor: '#000000',
+                                    title: itemOffered.reservationFor.name.ja,
+                                    // tslint:disable-next-line:max-line-length
+                                    text: text,
+                                    actions: [
+                                        {
+                                            type: 'postback',
+                                            label: '飲食を注文する',
+                                            data: `action=orderMenuItems&ticketToken=${itemOffered.reservedTicket.ticketToken}`
+                                        }
+                                    ]
+                                };
+                            }),
+                            imageAspectRatio: 'square'
+                            // imageAspectRatio: 'rectangle',
+                            // imageSize: 'cover'
+                        }
+                    }
+                ]
+            }
+        }).promise();
+    }
 }
 
 export async function findAccount(user: User) {
