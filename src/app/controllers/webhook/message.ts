@@ -298,6 +298,8 @@ export async function askReservationEventDate(userId: string, paymentNo: string)
  * ユーザーのチケット(座席予約)を検索する
  */
 export async function searchTickets(user: User) {
+    await LINE.pushMessage(user.userId, '座席予約を検索しています...');
+
     const personService = new ssktsapi.service.Person({
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
@@ -305,7 +307,7 @@ export async function searchTickets(user: User) {
     const ownershipInfos = await personService.searchReservationOwnerships({ personId: 'me' });
 
     if (ownershipInfos.length === 0) {
-        await LINE.pushMessage(user.userId, '座席予約はありません。');
+        await LINE.pushMessage(user.userId, '座席予約が見つかりませんでした。');
     } else {
         await request.post({
             simple: false,
@@ -326,7 +328,7 @@ export async function searchTickets(user: User) {
                                 const qr = `https://chart.apis.google.com/chart?chs=300x300&cht=qr&chl=${itemOffered.reservedTicket.ticketToken}`;
                                 const text = util.format(
                                     '%s-%s\n@%s\n%s',
-                                    moment(itemOffered.reservationFor.startDate).format('YY-MM-DD HH:mm'),
+                                    moment(itemOffered.reservationFor.startDate).format('YYYY-MM-DD HH:mm'),
                                     moment(itemOffered.reservationFor.endDate).format('HH:mm'),
                                     // tslint:disable-next-line:max-line-length
                                     `${itemOffered.reservationFor.superEvent.location.name.ja} ${itemOffered.reservationFor.location.name.ja}`,

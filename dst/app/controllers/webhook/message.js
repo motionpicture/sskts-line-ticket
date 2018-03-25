@@ -310,13 +310,14 @@ exports.askReservationEventDate = askReservationEventDate;
  */
 function searchTickets(user) {
     return __awaiter(this, void 0, void 0, function* () {
+        yield LINE.pushMessage(user.userId, '座席予約を検索しています...');
         const personService = new ssktsapi.service.Person({
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
         });
         const ownershipInfos = yield personService.searchReservationOwnerships({ personId: 'me' });
         if (ownershipInfos.length === 0) {
-            yield LINE.pushMessage(user.userId, '座席予約はありません。');
+            yield LINE.pushMessage(user.userId, '座席予約が見つかりませんでした。');
         }
         else {
             yield request.post({
@@ -336,7 +337,7 @@ function searchTickets(user) {
                                     const itemOffered = ownershipInfo.typeOfGood;
                                     // tslint:disable-next-line:max-line-length
                                     const qr = `https://chart.apis.google.com/chart?chs=300x300&cht=qr&chl=${itemOffered.reservedTicket.ticketToken}`;
-                                    const text = util.format('%s-%s\n@%s\n%s', moment(itemOffered.reservationFor.startDate).format('YY-MM-DD HH:mm'), moment(itemOffered.reservationFor.endDate).format('HH:mm'), 
+                                    const text = util.format('%s-%s\n@%s\n%s', moment(itemOffered.reservationFor.startDate).format('YYYY-MM-DD HH:mm'), moment(itemOffered.reservationFor.endDate).format('HH:mm'), 
                                     // tslint:disable-next-line:max-line-length
                                     `${itemOffered.reservationFor.superEvent.location.name.ja} ${itemOffered.reservationFor.location.name.ja}`, 
                                     // tslint:disable-next-line:max-line-length
