@@ -675,21 +675,11 @@ function depositFromCreditCard(user, amount, __) {
             scopes: [],
             state: ''
         });
-        const oauth2client = new pecorinoapi.auth.OAuth2({
-            domain: PECORINO_AUTHORIZE_SERVER_DOMAIN
-        });
-        oauth2client.setCredentials({
-            access_token: yield user.authClient.getAccessToken()
-        });
         const transferTransactionService4backend = new pecorinoapi.service.transaction.Deposit({
             endpoint: PECORINO_API_ENDPOINT,
             auth: auth
         });
-        const transferTransactionService4frontend = new pecorinoapi.service.transaction.Deposit({
-            endpoint: PECORINO_API_ENDPOINT,
-            auth: oauth2client
-        });
-        const transaction = yield transferTransactionService4frontend.start({
+        const transaction = yield transferTransactionService4backend.start({
             // tslint:disable-next-line:no-magic-numbers
             expires: moment().add(10, 'minutes').toDate(),
             agent: {
