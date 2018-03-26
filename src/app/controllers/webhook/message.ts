@@ -201,7 +201,7 @@ export async function askConfirmationOfTransferMoney(user: User, transferMoneyTo
  * 誰からお金をもらうか選択する
  */
 export async function selectWhomAskForMoney(user: User) {
-    const LINE_ID = '@qef9940v';
+    const LINE_ID = process.env.LINE_ID;
     const personService = new ssktsapi.service.Person({
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
@@ -414,6 +414,7 @@ export async function findAccount(user: User) {
         parseInt(account.balance, 10).toLocaleString(),
         parseInt(account.safeBalance, 10).toLocaleString()
     );
+
     await request.post({
         simple: false,
         url: 'https://api.line.me/v2/bot/message/push',
@@ -424,7 +425,7 @@ export async function findAccount(user: User) {
             messages: [
                 {
                     type: 'template',
-                    altText: 'How to use',
+                    altText: '口座確認',
                     template: {
                         type: 'buttons',
                         title: 'あなたのPecorino口座',
@@ -439,6 +440,11 @@ export async function findAccount(user: User) {
                                 type: 'message',
                                 label: 'おこづかいをもらう',
                                 text: 'おこづかい'
+                            },
+                            {
+                                type: 'postback',
+                                label: 'クレジットカードから入金する',
+                                uri: 'action=depositFromCreditCard'
                             }
                         ]
                     }

@@ -215,7 +215,7 @@ exports.askConfirmationOfTransferMoney = askConfirmationOfTransferMoney;
  */
 function selectWhomAskForMoney(user) {
     return __awaiter(this, void 0, void 0, function* () {
-        const LINE_ID = '@qef9940v';
+        const LINE_ID = process.env.LINE_ID;
         const personService = new ssktsapi.service.Person({
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
@@ -428,7 +428,7 @@ function findAccount(user) {
                 messages: [
                     {
                         type: 'template',
-                        altText: 'How to use',
+                        altText: '口座確認',
                         template: {
                             type: 'buttons',
                             title: 'あなたのPecorino口座',
@@ -443,6 +443,11 @@ function findAccount(user) {
                                     type: 'message',
                                     label: 'おこづかいをもらう',
                                     text: 'おこづかい'
+                                },
+                                {
+                                    type: 'postback',
+                                    label: 'クレジットカードから入金する',
+                                    uri: 'action=depositFromCreditCard'
                                 }
                             ]
                         }

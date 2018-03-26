@@ -253,7 +253,7 @@ function createTmpReservation(user, eventIdentifier) {
         });
         debug('seatReservationAuthorization:', seatReservationAuthorization);
         yield LINE.pushMessage(user.userId, `座席 ${selectedSeatCode} を確保しました。`);
-        const LINE_ID = '@qef9940v';
+        const LINE_ID = process.env.LINE_ID;
         const token = yield user.signFriendPayInfo({
             transactionId: transaction.id,
             userId: user.userId,
@@ -605,6 +605,55 @@ function confirmTransferMoney(user, token, price) {
     });
 }
 exports.confirmTransferMoney = confirmTransferMoney;
+/**
+ * クレジットから口座へ入金する
+ */
+function selectDepositAmount(user) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const gmoShopId = 'tshop00026096';
+        const creditCardCallback = `https://${user.host}/transactions/transactionId/inputCreditCard?userId=${user.userId}`;
+        // tslint:disable-next-line:max-line-length
+        const creditCardUrl = `https://${user.host}/transactions/inputCreditCard?cb=${encodeURIComponent(creditCardCallback)}&gmoShopId=${gmoShopId}`;
+        yield request.post({
+            simple: false,
+            url: 'https://api.line.me/v2/bot/message/push',
+            auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+            json: true,
+            body: {
+                to: user.userId,
+                messages: [
+                    {
+                        type: 'template',
+                        altText: '口座へ入金',
+                        template: {
+                            type: 'buttons',
+                            title: 'Pecorino口座へ入金する',
+                            text: 'いくら入金しますか?',
+                            actions: [
+                                {
+                                    type: 'uri',
+                                    label: '100円',
+                                    uri: `${creditCardUrl}&amount=100`
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }).promise();
+    });
+}
+exports.selectDepositAmount = selectDepositAmount;
+/**
+ * クレジットから口座へ入金する
+ */
+function depositFromCreditCard(user, amount, __) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield LINE.pushMessage(user.userId, `${amount}円の入金処理を実行します...`);
+        yield LINE.pushMessage(user.userId, '入金処理が完了しました。');
+    });
+}
+exports.depositFromCreditCard = depositFromCreditCard;
 /**
  * 取引検索(csvダウンロード)
  * @export

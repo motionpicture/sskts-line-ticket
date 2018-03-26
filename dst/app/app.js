@@ -13,8 +13,8 @@ const mongooseConnectionOptions_1 = require("../mongooseConnectionOptions");
 const app = express();
 app.use(session_1.default); // セッション
 // view engine setup
-// app.set('views', `${__dirname}/views`);
-// app.set('view engine', 'ejs');
+app.set('views', `${__dirname}/../../views`);
+app.set('view engine', 'ejs');
 app.use(bodyParser.json());
 // The extended option allows to choose between parsing the URL-encoded data
 // with the querystring library (when false) or the qs library (when true).

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 - Friend Payフローを追加。
 - おこづかいをもらうフローを追加。
 - 座席予約確認機能を追加。
+- クレジットカードからPecorino口座げ入金するフローを追加。
 
 ### Changed
 

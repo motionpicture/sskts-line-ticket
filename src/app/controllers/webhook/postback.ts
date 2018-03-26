@@ -265,7 +265,7 @@ export async function createTmpReservation(user: User, eventIdentifier: string) 
     debug('seatReservationAuthorization:', seatReservationAuthorization);
     await LINE.pushMessage(user.userId, `座席 ${selectedSeatCode} を確保しました。`);
 
-    const LINE_ID = '@qef9940v';
+    const LINE_ID = process.env.LINE_ID;
     const token = await user.signFriendPayInfo({
         transactionId: transaction.id,
         userId: user.userId,
@@ -632,6 +632,53 @@ export async function confirmTransferMoney(user: User, token: string, price: num
 
     // 振込先に通知
     await LINE.pushMessage(transferMoneyInfo.userId, `${contact.familyName} ${contact.givenName}から${price}円おこづかいが振り込まれました。`);
+}
+
+/**
+ * クレジットから口座へ入金する
+ */
+export async function selectDepositAmount(user: User) {
+    const gmoShopId = 'tshop00026096';
+    const creditCardCallback = `https://${user.host}/transactions/transactionId/inputCreditCard?userId=${user.userId}`;
+    // tslint:disable-next-line:max-line-length
+    const creditCardUrl = `https://${user.host}/transactions/inputCreditCard?cb=${encodeURIComponent(creditCardCallback)}&gmoShopId=${gmoShopId}`;
+
+    await request.post({
+        simple: false,
+        url: 'https://api.line.me/v2/bot/message/push',
+        auth: { bearer: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN },
+        json: true,
+        body: {
+            to: user.userId,
+            messages: [
+                {
+                    type: 'template',
+                    altText: '口座へ入金',
+                    template: {
+                        type: 'buttons',
+                        title: 'Pecorino口座へ入金する',
+                        text: 'いくら入金しますか?',
+                        actions: [
+                            {
+                                type: 'uri',
+                                label: '100円',
+                                uri: `${creditCardUrl}&amount=100`
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }).promise();
+}
+
+/**
+ * クレジットから口座へ入金する
+ */
+export async function depositFromCreditCard(user: User, amount: number, __: string) {
+    await LINE.pushMessage(user.userId, `${amount}円の入金処理を実行します...`);
+
+    await LINE.pushMessage(user.userId, '入金処理が完了しました。');
 }
 
 /**

@@ -162,6 +162,11 @@ export async function postback(event: LINE.IWebhookEvent, user: User) {
                     user, 'FriendPay', <string>data.transactionId, parseInt(<string>data.price, 10));
                 break;
 
+            // 口座入金金額選択
+            case 'depositFromCreditCard':
+                await PostbackController.selectDepositAmount(user);
+                break;
+
             default:
         }
     } catch (error) {

@@ -140,6 +140,10 @@ function postback(event, user) {
                 case 'continueTransactionAfterFriendPayConfirmation':
                     yield PostbackController.choosePaymentMethod(user, 'FriendPay', data.transactionId, parseInt(data.price, 10));
                     break;
+                // 口座入金金額選択
+                case 'depositFromCreditCard':
+                    yield PostbackController.selectDepositAmount(user);
+                    break;
                 default:
             }
         }
