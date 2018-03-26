@@ -678,66 +678,63 @@ export async function selectDepositAmount(user: User) {
 export async function depositFromCreditCard(user: User, amount: number, __: string) {
     await LINE.pushMessage(user.userId, `${amount}円の入金処理を実行します...`);
 
-    const personService = new ssktsapi.service.Person({
-        endpoint: <string>process.env.API_ENDPOINT,
-        auth: user.authClient
-    });
-    const account = await personService.findAccount({ personId: 'me' });
-    const contact = await personService.getContacts({ personId: 'me' });
+    // const personService = new ssktsapi.service.Person({
+    //     endpoint: <string>process.env.API_ENDPOINT,
+    //     auth: user.authClient
+    // });
 
-    if (PECORINO_API_ENDPOINT === undefined) {
-        throw new Error('PECORINO_API_ENDPOINT undefined.');
-    }
-    if (PECORINO_CLIENT_ID === undefined) {
-        throw new Error('PECORINO_CLIENT_ID undefined.');
-    }
-    if (PECORINO_CLIENT_SECRET === undefined) {
-        throw new Error('PECORINO_CLIENT_SECRET undefined.');
-    }
-    if (PECORINO_AUTHORIZE_SERVER_DOMAIN === undefined) {
-        throw new Error('PECORINO_AUTHORIZE_SERVER_DOMAIN undefined.');
-    }
+    // if (PECORINO_API_ENDPOINT === undefined) {
+    //     throw new Error('PECORINO_API_ENDPOINT undefined.');
+    // }
+    // if (PECORINO_CLIENT_ID === undefined) {
+    //     throw new Error('PECORINO_CLIENT_ID undefined.');
+    // }
+    // if (PECORINO_CLIENT_SECRET === undefined) {
+    //     throw new Error('PECORINO_CLIENT_SECRET undefined.');
+    // }
+    // if (PECORINO_AUTHORIZE_SERVER_DOMAIN === undefined) {
+    //     throw new Error('PECORINO_AUTHORIZE_SERVER_DOMAIN undefined.');
+    // }
 
-    const auth = new pecorinoapi.auth.ClientCredentials({
-        domain: PECORINO_AUTHORIZE_SERVER_DOMAIN,
-        clientId: PECORINO_CLIENT_ID,
-        clientSecret: PECORINO_CLIENT_SECRET,
-        scopes: [],
-        state: ''
-    });
+    // const auth = new pecorinoapi.auth.ClientCredentials({
+    //     domain: PECORINO_AUTHORIZE_SERVER_DOMAIN,
+    //     clientId: PECORINO_CLIENT_ID,
+    //     clientSecret: PECORINO_CLIENT_SECRET,
+    //     scopes: [],
+    //     state: ''
+    // });
 
-    const transferTransactionService4backend = new pecorinoapi.service.transaction.Deposit({
-        endpoint: PECORINO_API_ENDPOINT,
-        auth: auth
-    });
+    // const transferTransactionService4backend = new pecorinoapi.service.transaction.Deposit({
+    //     endpoint: PECORINO_API_ENDPOINT,
+    //     auth: auth
+    // });
 
-    const transaction = await transferTransactionService4backend.start({
-        // tslint:disable-next-line:no-magic-numbers
-        expires: moment().add(10, 'minutes').toDate(),
-        agent: {
-            typeOf: 'Person',
-            id: user.payload.sub,
-            name: `${contact.familyName} ${contact.givenName}`,
-            url: ''
-        },
-        recipient: {
-            typeOf: 'Person',
-            id: user.payload.sub,
-            name: `${contact.familyName} ${contact.givenName}`,
-            url: ''
-        },
-        price: amount,
-        notes: 'LINEチケット入金',
-        toAccountId: account.id
-    });
-    debug('transaction started.', transaction.id);
-    await LINE.pushMessage(user.userId, '残高の確認がとれました。');
+    // const transaction = await transferTransactionService4backend.start({
+    //     // tslint:disable-next-line:no-magic-numbers
+    //     expires: moment().add(10, 'minutes').toDate(),
+    //     agent: {
+    //         typeOf: 'Person',
+    //         id: user.userId,
+    //         name: 'self',
+    //         url: ''
+    //     },
+    //     recipient: {
+    //         typeOf: 'Person',
+    //         id: user.userId,
+    //         name: 'self',
+    //         url: ''
+    //     },
+    //     price: amount,
+    //     notes: 'LINEチケット入金',
+    //     toAccountId: account.id
+    // });
+    // debug('transaction started.', transaction.id);
 
-    // バックエンドで確定
-    await transferTransactionService4backend.confirm({
-        transactionId: transaction.id
-    });
-    debug('transaction confirmed.');
+    // // バックエンドで確定
+    // await transferTransactionService4backend.confirm({
+    //     transactionId: transaction.id
+    // });
+    // debug('transaction confirmed.');
     await LINE.pushMessage(user.userId, '入金処理が完了しました。');
 }
 
