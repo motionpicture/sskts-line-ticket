@@ -446,8 +446,8 @@ function findAccount(user) {
                                 },
                                 {
                                     type: 'postback',
-                                    label: 'クレジットカードから入金する',
-                                    uri: 'action=depositFromCreditCard'
+                                    label: 'クレカから入金する',
+                                    data: 'action=depositFromCreditCard'
                                 }
                             ]
                         }
