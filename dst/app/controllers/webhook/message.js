@@ -179,22 +179,22 @@ function askConfirmationOfTransferMoney(user, transferMoneyToken) {
                         altText: 'おこづかい金額選択',
                         template: {
                             type: 'buttons',
-                            text: `${transferMoneyInfo.name}がおこづかいを要求しています。いくらあげますか？`,
+                            text: `${transferMoneyInfo.name}がおこづかいを要求しています。どのくらいあげますか？`,
                             actions: [
                                 {
                                     type: 'postback',
-                                    label: '100円あげる',
+                                    label: '10ポイント',
+                                    data: `action=confirmTransferMoney&token=${transferMoneyToken}&price=10`
+                                },
+                                {
+                                    type: 'postback',
+                                    label: '100ポイント',
                                     data: `action=confirmTransferMoney&token=${transferMoneyToken}&price=100`
                                 },
                                 {
                                     type: 'postback',
-                                    label: '1000円あげる',
+                                    label: '1000ポイント',
                                     data: `action=confirmTransferMoney&token=${transferMoneyToken}&price=1000`
-                                },
-                                {
-                                    type: 'postback',
-                                    label: '10000円あげる',
-                                    data: `action=confirmTransferMoney&token=${transferMoneyToken}&price=10000`
                                 },
                                 {
                                     type: 'postback',
@@ -510,7 +510,7 @@ function searchAccountTradeActions(user) {
                     break;
                 default:
             }
-            return util.format('●%s %s %s %s\n⇐ %s\n[%s]\n⇒ %s\n[%s]\n@%s', (a.fromLocation.accountNumber === account.accountNumber) ? '出' : '入', moment(a.endDate).format('YY.MM.DD HH:mm'), actionName, `${a.amount}円`, a.fromLocation.name, (a.fromLocation.accountNumber !== undefined) ? a.fromLocation.accountNumber : '', a.toLocation.name, (a.toLocation.accountNumber !== undefined) ? a.toLocation.accountNumber : '', (a.description !== undefined) ? a.description : '');
+            return util.format('●%s %s %s %s\n⇐ %s\n[%s]\n⇒ %s\n[%s]\n@%s', (a.fromLocation.accountNumber === account.accountNumber) ? '出' : '入', moment(a.endDate).format('YY.MM.DD HH:mm'), actionName, `${a.amount}P`, a.fromLocation.name, (a.fromLocation.accountNumber !== undefined) ? a.fromLocation.accountNumber : '', a.toLocation.name, (a.toLocation.accountNumber !== undefined) ? a.toLocation.accountNumber : '', (a.description !== undefined) ? a.description : '');
         }).join('\n');
         yield LINE.pushMessage(user.userId, actionsStr);
     });

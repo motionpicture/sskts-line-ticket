@@ -513,7 +513,7 @@ ${order.price}
 export async function confirmFriendPay(user: User, token: string) {
     const friendPayInfo = await user.verifyFriendPayToken(token);
 
-    await LINE.pushMessage(user.userId, `${friendPayInfo.price}円の友達決済を受け付けます。`);
+    await LINE.pushMessage(user.userId, `${friendPayInfo.price}ポイントの友達決済を受け付けます。`);
     await LINE.pushMessage(user.userId, '残高を確認しています...');
 
     const personService = new ssktsapi.service.Person({
@@ -593,7 +593,7 @@ export async function confirmFriendPay(user: User, token: string) {
 export async function confirmTransferMoney(user: User, token: string, price: number) {
     const transferMoneyInfo = await user.verifyTransferMoneyToken(token);
 
-    await LINE.pushMessage(user.userId, `${transferMoneyInfo.name}に${price}円の振込を実行します...`);
+    await LINE.pushMessage(user.userId, `${transferMoneyInfo.name}に${price}ポイントの振込を実行します...`);
 
     if (PECORINO_API_ENDPOINT === undefined) {
         throw new Error('PECORINO_API_ENDPOINT undefined.');
@@ -662,7 +662,7 @@ export async function confirmTransferMoney(user: User, token: string, price: num
     const contact = await personService.getContacts({ personId: 'me' });
 
     // 振込先に通知
-    await LINE.pushMessage(transferMoneyInfo.userId, `${contact.familyName} ${contact.givenName}から${price}円おこづかいが振り込まれました。`);
+    await LINE.pushMessage(transferMoneyInfo.userId, `${contact.familyName} ${contact.givenName}から${price}ポイントおこづかいが振り込まれました。`);
 }
 
 /**
@@ -707,7 +707,7 @@ export async function selectDepositAmount(user: User) {
  * クレジットから口座へ入金する
  */
 export async function depositFromCreditCard(user: User, amount: number, __: string) {
-    await LINE.pushMessage(user.userId, `${amount}円の入金処理を実行します...`);
+    await LINE.pushMessage(user.userId, `${amount}ポイントの入金処理を実行します...`);
 
     // const personService = new ssktsapi.service.Person({
     //     endpoint: <string>process.env.API_ENDPOINT,

@@ -167,22 +167,22 @@ export async function askConfirmationOfTransferMoney(user: User, transferMoneyTo
                     altText: 'おこづかい金額選択',
                     template: {
                         type: 'buttons',
-                        text: `${transferMoneyInfo.name}がおこづかいを要求しています。いくらあげますか？`,
+                        text: `${transferMoneyInfo.name}がおこづかいを要求しています。どのくらいあげますか？`,
                         actions: [
                             {
                                 type: 'postback',
-                                label: '100円あげる',
+                                label: '10ポイント',
+                                data: `action=confirmTransferMoney&token=${transferMoneyToken}&price=10`
+                            },
+                            {
+                                type: 'postback',
+                                label: '100ポイント',
                                 data: `action=confirmTransferMoney&token=${transferMoneyToken}&price=100`
                             },
                             {
                                 type: 'postback',
-                                label: '1000円あげる',
+                                label: '1000ポイント',
                                 data: `action=confirmTransferMoney&token=${transferMoneyToken}&price=1000`
-                            },
-                            {
-                                type: 'postback',
-                                label: '10000円あげる',
-                                data: `action=confirmTransferMoney&token=${transferMoneyToken}&price=10000`
                             },
                             {
                                 type: 'postback',
@@ -517,7 +517,7 @@ export async function searchAccountTradeActions(user: User) {
                 ((<any>a.fromLocation).accountNumber === (<any>account).accountNumber) ? '出' : '入',
                 moment(a.endDate).format('YY.MM.DD HH:mm'),
                 actionName,
-                `${a.amount}円`,
+                `${a.amount}P`,
                 a.fromLocation.name,
                 ((<any>a.fromLocation).accountNumber !== undefined) ? (<any>a.fromLocation).accountNumber : '',
                 a.toLocation.name,

@@ -493,7 +493,7 @@ exports.confirmOrder = confirmOrder;
 function confirmFriendPay(user, token) {
     return __awaiter(this, void 0, void 0, function* () {
         const friendPayInfo = yield user.verifyFriendPayToken(token);
-        yield LINE.pushMessage(user.userId, `${friendPayInfo.price}円の友達決済を受け付けます。`);
+        yield LINE.pushMessage(user.userId, `${friendPayInfo.price}ポイントの友達決済を受け付けます。`);
         yield LINE.pushMessage(user.userId, '残高を確認しています...');
         const personService = new ssktsapi.service.Person({
             endpoint: process.env.API_ENDPOINT,
@@ -569,7 +569,7 @@ exports.confirmFriendPay = confirmFriendPay;
 function confirmTransferMoney(user, token, price) {
     return __awaiter(this, void 0, void 0, function* () {
         const transferMoneyInfo = yield user.verifyTransferMoneyToken(token);
-        yield LINE.pushMessage(user.userId, `${transferMoneyInfo.name}に${price}円の振込を実行します...`);
+        yield LINE.pushMessage(user.userId, `${transferMoneyInfo.name}に${price}ポイントの振込を実行します...`);
         if (PECORINO_API_ENDPOINT === undefined) {
             throw new Error('PECORINO_API_ENDPOINT undefined.');
         }
@@ -631,7 +631,7 @@ function confirmTransferMoney(user, token, price) {
         yield LINE.pushMessage(user.userId, '転送が完了しました。');
         const contact = yield personService.getContacts({ personId: 'me' });
         // 振込先に通知
-        yield LINE.pushMessage(transferMoneyInfo.userId, `${contact.familyName} ${contact.givenName}から${price}円おこづかいが振り込まれました。`);
+        yield LINE.pushMessage(transferMoneyInfo.userId, `${contact.familyName} ${contact.givenName}から${price}ポイントおこづかいが振り込まれました。`);
     });
 }
 exports.confirmTransferMoney = confirmTransferMoney;
@@ -679,7 +679,7 @@ exports.selectDepositAmount = selectDepositAmount;
  */
 function depositFromCreditCard(user, amount, __) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield LINE.pushMessage(user.userId, `${amount}円の入金処理を実行します...`);
+        yield LINE.pushMessage(user.userId, `${amount}ポイントの入金処理を実行します...`);
         // const personService = new ssktsapi.service.Person({
         //     endpoint: <string>process.env.API_ENDPOINT,
         //     auth: user.authClient
