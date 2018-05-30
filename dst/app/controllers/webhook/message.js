@@ -220,11 +220,15 @@ function selectWhomAskForMoney(user) {
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
         });
-        const account = yield personService.findAccount({ personId: 'me' });
+        const accounts = yield personService.findAccounts({ personId: 'me' });
+        if (accounts.length === 0) {
+            throw new Error('口座未開設です。');
+        }
+        const account = accounts[0];
         const contact = yield personService.getContacts({ personId: 'me' });
         const token = yield user.signTransferMoneyInfo({
             userId: user.userId,
-            accountId: account.id,
+            accountId: account.accountNumber,
             name: `${contact.familyName} ${contact.givenName}`
         });
         const friendMessage = `TransferMoneyToken.${token}`;
@@ -355,7 +359,11 @@ function searchTickets(user) {
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
         });
-        const ownershipInfos = yield personService.searchReservationOwnerships({ personId: 'me' });
+        const ownershipInfos = yield personService.searchOwnershipInfos({
+            goodType: ssktsapi.factory.reservationType.EventReservation,
+            ownedBy: 'me',
+            ownedAt: new Date()
+        });
         if (ownershipInfos.length === 0) {
             yield LINE.pushMessage(user.userId, '座席予約が見つかりませんでした。');
         }
@@ -415,9 +423,14 @@ function findAccount(user) {
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
         });
-        const account = yield personService.findAccount({ personId: 'me' });
-        debug('account:', account);
-        const text = util.format('口座ID: %s\n現在残高: %s\n引出可能残高: %s', account.id, parseInt(account.balance, 10).toLocaleString(), parseInt(account.safeBalance, 10).toLocaleString());
+        let accounts = yield personService.findAccounts({ personId: 'me' });
+        accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+        debug('accounts:', accounts);
+        if (accounts.length === 0) {
+            throw new Error('口座未開設です。');
+        }
+        const account = accounts[0];
+        const text = util.format('口座番号: %s\n残高: %s\n引出可能残高: %s', account.accountNumber, account.balance.toLocaleString('ja'), account.availableBalance.toLocaleString('ja'));
         yield request.post({
             simple: false,
             url: 'https://api.line.me/v2/bot/message/push',
@@ -431,7 +444,7 @@ function findAccount(user) {
                         altText: '口座確認',
                         template: {
                             type: 'buttons',
-                            title: 'あなたのPecorino口座',
+                            title: '口座',
                             text: text,
                             actions: [
                                 {
@@ -464,14 +477,23 @@ function searchAccountTradeActions(user) {
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
         });
-        const account = yield personService.findAccount({ personId: 'me' });
-        let transferActions = yield personService.searchAccountTradeActions({ personId: 'me' });
-        // tslint:disable-next-line:no-magic-numbers
-        transferActions = transferActions.reverse().slice(0, 10);
+        let accounts = yield personService.findAccounts({ personId: 'me' });
+        accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+        debug('accounts:', accounts);
+        if (accounts.length === 0) {
+            throw new Error('口座未開設です。');
+        }
+        const account = accounts[0];
+        let transferActions = yield personService.searchAccountMoneyTransferActions({
+            personId: 'me',
+            accountNumber: account.accountNumber
+        });
         if (transferActions.length === 0) {
             yield LINE.pushMessage(user.userId, 'まだ取引履歴はありません。');
             return;
         }
+        // tslint:disable-next-line:no-magic-numbers
+        transferActions = transferActions.slice(0, 10);
         const actionsStr = transferActions.map((a) => {
             let actionName = '';
             switch (a.purpose.typeOf) {
@@ -486,7 +508,7 @@ function searchAccountTradeActions(user) {
                     break;
                 default:
             }
-            return util.format('●%s %s %s %s %s[%s] -> %s[%s] @%s %s', (a.fromLocation.id === account.id) ? '出' : '入', moment(a.endDate).format('YY.MM.DD HH:mm'), actionName, `${a.amount}円`, a.fromLocation.name, (a.fromLocation.id !== undefined) ? a.fromLocation.id : '', a.toLocation.name, (a.toLocation.id !== undefined) ? a.toLocation.id : '', a.purpose.typeOf, (a.object !== undefined) ? a.object.notes : '');
+            return util.format('●%s %s %s %s\n⇐ %s\n[%s]\n⇒ %s\n[%s]\n@%s', (a.fromLocation.accountNumber === account.accountNumber) ? '出' : '入', moment(a.endDate).format('YY.MM.DD HH:mm'), actionName, `${a.amount}円`, a.fromLocation.name, (a.fromLocation.accountNumber !== undefined) ? a.fromLocation.accountNumber : '', a.toLocation.name, (a.toLocation.accountNumber !== undefined) ? a.toLocation.accountNumber : '', (a.description !== undefined) ? a.description : '');
         }).join('\n');
         yield LINE.pushMessage(user.userId, actionsStr);
     });

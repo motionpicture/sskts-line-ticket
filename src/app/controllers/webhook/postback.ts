@@ -203,15 +203,16 @@ export async function createTmpReservation(user: User, eventIdentifier: string) 
 
     // 座席選択
 
-    const salesTicketResult = await sskts.COA.services.reserve.salesTicket({
-        theaterCode: event.coaInfo.theaterCode,
-        dateJouei: event.coaInfo.dateJouei,
-        titleCode: event.coaInfo.titleCode,
-        titleBranchNum: event.coaInfo.titleBranchNum,
-        timeBegin: event.coaInfo.timeBegin,
-        flgMember: sskts.COA.services.reserve.FlgMember.NonMember
-    }).then((results) => results.filter((result) => result.limitUnit === '001' && result.limitCount === 1));
-    debug('salesTicketResult:', salesTicketResult);
+    // 無料鑑賞券取得
+    const tickets = await sskts.COA.services.master.ticket({
+        theaterCode: event.coaInfo.theaterCode
+    });
+    const freeTickets = tickets.filter((t) => t.usePoint > 0 && t.flgMember === sskts.COA.services.master.FlgMember.Member);
+    if (freeTickets.length === 0) {
+        throw new Error('無料鑑賞券が見つかりませんでした。');
+    }
+    const selectedTicket = freeTickets[0];
+    debug('無料鑑賞券が見つかりました。', selectedTicket.ticketCode);
 
     // search available seats from sskts.COA
     const getStateReserveSeatResult = await sskts.COA.services.reserve.stateReserveSeat({
@@ -237,7 +238,7 @@ export async function createTmpReservation(user: User, eventIdentifier: string) 
     const selectedSeatCode = freeSeatCodes[Math.floor(freeSeatCodes.length * Math.random())];
     // select a ticket randomly
     // tslint:disable-next-line:insecure-random
-    const selectedSalesTicket = salesTicketResult[Math.floor(salesTicketResult.length * Math.random())];
+    const selectedSalesTicket = selectedTicket;
 
     debug('creating a seat reservation authorization...');
     const seatReservationAuthorization = await placeOrderService.createSeatReservationAuthorization({
@@ -251,13 +252,14 @@ export async function createTmpReservation(user: User, eventIdentifier: string) 
                     ticketCode: selectedSalesTicket.ticketCode,
                     mvtkAppPrice: 0,
                     ticketCount: 1,
-                    addGlasses: selectedSalesTicket.addGlasses,
+                    addGlasses: 0,
                     kbnEisyahousiki: '00',
                     mvtkNum: '',
                     mvtkKbnDenshiken: '00',
                     mvtkKbnMaeuriken: '00',
                     mvtkKbnKensyu: '00',
-                    mvtkSalesPrice: 0
+                    mvtkSalesPrice: 0,
+                    usePoint: selectedTicket.usePoint
                 }
             }
         ]
@@ -269,7 +271,7 @@ export async function createTmpReservation(user: User, eventIdentifier: string) 
     const token = await user.signFriendPayInfo({
         transactionId: transaction.id,
         userId: user.userId,
-        price: (<sskts.factory.action.authorize.seatReservation.IResult>seatReservationAuthorization.result).price
+        price: (<sskts.factory.action.authorize.offer.seatReservation.IResult>seatReservationAuthorization.result).price
     });
     const friendMessage = `FriendPayToken.${token}`;
     const message = encodeURIComponent(`僕の代わりに決済をお願いできますか？よければ、下のリンクを押してそのままメッセージを送信してください。
@@ -321,22 +323,22 @@ export async function choosePaymentMethod(user: User, paymentMethod: PaymentMeth
         auth: user.authClient
     });
 
-    let price: number;
+    let price: number = 0;
 
     if (paymentMethod === 'Pecorino') {
         debug('checking balance...', paymentMethod, transactionId);
         await LINE.pushMessage(user.userId, '残高を確認しています...');
 
         const actionRepo = new sskts.repository.Action(sskts.mongoose.connection);
-        let seatReservations = await actionRepo.findAuthorizeByTransactionId(transactionId);
-        seatReservations = seatReservations
+        const authorizeActions = await actionRepo.findAuthorizeByTransactionId(transactionId);
+        const seatReservations = <ssktsapi.factory.action.authorize.offer.seatReservation.IAction[]>authorizeActions
             .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
-            .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.seatReservation.ObjectType.SeatReservation);
-        price = seatReservations[0].result.price;
-
-        const pecorinoAuthorization = await placeOrderService.createPecorinoAuthorization({
+            .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.offer.seatReservation.ObjectType.SeatReservation);
+        const amount = (<ssktsapi.factory.action.authorize.offer.seatReservation.IResult>seatReservations[0].result).pecorinoAmount;
+        const pecorinoAuthorization = await placeOrderService.createPecorinoPaymentAuthorization({
             transactionId: transactionId,
-            price: price
+            amount: amount,
+            fromAccountNumber: ''
         });
         debug('Pecorino残高確認済', pecorinoAuthorization);
         await LINE.pushMessage(user.userId, '残高の確認がとれました。');
@@ -411,11 +413,14 @@ export async function confirmOrder(user: User, transactionId: string) {
     const order = await placeOrderService.confirm({
         transactionId: transactionId
     });
-    const event = order.acceptedOffers[0].itemOffered.reservationFor;
-    const reservedTickets = order.acceptedOffers.map(
-        // tslint:disable-next-line:max-line-length
-        (orderItem) => `${orderItem.itemOffered.reservedTicket.ticketedSeat.seatNumber} ${orderItem.itemOffered.reservedTicket.coaTicketInfo.ticketName} ￥${orderItem.itemOffered.reservedTicket.coaTicketInfo.salePrice}`
-    ).join('\n');
+    const event = (<ssktsapi.factory.reservation.event.IEventReservation<any>>order.acceptedOffers[0].itemOffered).reservationFor;
+    const reservedTickets = order.acceptedOffers.map((orderItem) => {
+        const item = <ssktsapi.factory.reservation.event.IEventReservation<any>>orderItem.itemOffered;
+        // tslint:disable-next-line:max-line-length no-unnecessary-local-variable
+        const str = `${item.reservedTicket.ticketedSeat.seatNumber} ${item.reservedTicket.coaTicketInfo.ticketName} ￥${item.reservedTicket.coaTicketInfo.salePrice}`;
+
+        return str;
+    }).join('\n');
 
     const orderDetails = `--------------------
 注文内容
@@ -431,7 +436,7 @@ ${(order.customer.memberOf !== undefined) ? `${order.customer.memberOf.membershi
 --------------------
 座席予約
 --------------------
-${order.acceptedOffers[0].itemOffered.reservationFor.name.ja}
+${event.name.ja}
 ${moment(event.startDate).format('YYYY-MM-DD HH:mm')}-${moment(event.endDate).format('HH:mm')}
 @${event.superEvent.location.name.ja} ${event.location.name.ja}
 ${reservedTickets}
@@ -460,7 +465,7 @@ ${order.price}
                     template: {
                         type: 'carousel',
                         columns: order.acceptedOffers.map((offer) => {
-                            const itemOffered = offer.itemOffered;
+                            const itemOffered = <ssktsapi.factory.reservation.event.IEventReservation<any>>offer.itemOffered;
                             // tslint:disable-next-line:max-line-length
                             const qr = `https://chart.apis.google.com/chart?chs=300x300&cht=qr&chl=${itemOffered.reservedTicket.ticketToken}`;
 
@@ -505,15 +510,16 @@ export async function confirmFriendPay(user: User, token: string) {
     });
 
     const actionRepo = new sskts.repository.Action(sskts.mongoose.connection);
-    let seatReservations = await actionRepo.findAuthorizeByTransactionId(friendPayInfo.transactionId);
-    seatReservations = seatReservations
+    const authorizeActions = await actionRepo.findAuthorizeByTransactionId(friendPayInfo.transactionId);
+    const seatReservations = <ssktsapi.factory.action.authorize.offer.seatReservation.IAction[]>authorizeActions
         .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
-        .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.seatReservation.ObjectType.SeatReservation);
-    const price = seatReservations[0].result.price;
+        .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.offer.seatReservation.ObjectType.SeatReservation);
+    const amount = (<ssktsapi.factory.action.authorize.offer.seatReservation.IResult>seatReservations[0].result).pecorinoAmount;
 
-    const pecorinoAuthorization = await placeOrderService.createPecorinoAuthorization({
+    const pecorinoAuthorization = await placeOrderService.createPecorinoPaymentAuthorization({
         transactionId: friendPayInfo.transactionId,
-        price: price
+        amount: amount,
+        fromAccountNumber: ''
     });
     debug('Pecorino残高確認済', pecorinoAuthorization);
     await LINE.pushMessage(user.userId, '残高の確認がとれました。');
@@ -592,33 +598,33 @@ export async function confirmTransferMoney(user: User, token: string, price: num
         access_token: await user.authClient.getAccessToken()
     });
 
-    const transferTransactionService4backend = new pecorinoapi.service.transaction.Transfer({
+    const transferService = new pecorinoapi.service.transaction.Transfer({
         endpoint: PECORINO_API_ENDPOINT,
         auth: auth
     });
-    const transferTransactionService4frontend = new pecorinoapi.service.transaction.Transfer({
-        endpoint: PECORINO_API_ENDPOINT,
-        auth: oauth2client
-    });
 
-    const transaction = await transferTransactionService4frontend.start({
+    const transaction = await transferService.start({
         // tslint:disable-next-line:no-magic-numbers
         expires: moment().add(10, 'minutes').toDate(),
+        agent: {
+            name: ''
+        },
         recipient: {
             typeOf: 'Person',
             id: transferMoneyInfo.userId,
             name: transferMoneyInfo.name,
             url: ''
         },
-        price: price,
+        amount: price,
         notes: 'LINEチケットおこづかい',
-        toAccountId: transferMoneyInfo.accountId
+        fromAccountNumber: '',
+        toAccountNumber: transferMoneyInfo.accountId
     });
     debug('transaction started.', transaction.id);
     await LINE.pushMessage(user.userId, '残高の確認がとれました。');
 
     // バックエンドで確定
-    await transferTransactionService4backend.confirm({
+    await transferService.confirm({
         transactionId: transaction.id
     });
     debug('transaction confirmed.');

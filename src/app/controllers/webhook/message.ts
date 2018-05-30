@@ -206,12 +206,16 @@ export async function selectWhomAskForMoney(user: User) {
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
     });
-    const account = await personService.findAccount({ personId: 'me' });
+    const accounts = await personService.findAccounts({ personId: 'me' });
+    if (accounts.length === 0) {
+        throw new Error('口座未開設です。');
+    }
+    const account = accounts[0];
     const contact = await personService.getContacts({ personId: 'me' });
 
     const token = await user.signTransferMoneyInfo({
         userId: user.userId,
-        accountId: account.id,
+        accountId: (<any>account).accountNumber,
         name: `${contact.familyName} ${contact.givenName}`
     });
     const friendMessage = `TransferMoneyToken.${token}`;
@@ -342,7 +346,11 @@ export async function searchTickets(user: User) {
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
     });
-    const ownershipInfos = await personService.searchReservationOwnerships({ personId: 'me' });
+    const ownershipInfos = await personService.searchOwnershipInfos({
+        goodType: ssktsapi.factory.reservationType.EventReservation,
+        ownedBy: 'me',
+        ownedAt: new Date()
+    });
 
     if (ownershipInfos.length === 0) {
         await LINE.pushMessage(user.userId, '座席予約が見つかりませんでした。');
@@ -369,7 +377,7 @@ export async function searchTickets(user: User) {
                                     moment(itemOffered.reservationFor.startDate).format('YYYY-MM-DD HH:mm'),
                                     moment(itemOffered.reservationFor.endDate).format('HH:mm'),
                                     // tslint:disable-next-line:max-line-length
-                                    `${itemOffered.reservationFor.superEvent.location.name.ja} ${itemOffered.reservationFor.location.name.ja}`,
+                                    `${(<any>itemOffered.reservationFor).superEvent.location.name.ja} ${(<any>itemOffered.reservationFor.location).name.ja}`,
                                     // tslint:disable-next-line:max-line-length
                                     `${itemOffered.reservedTicket.ticketedSeat.seatNumber} ${itemOffered.reservedTicket.coaTicketInfo.ticketName} ￥${itemOffered.reservedTicket.coaTicketInfo.salePrice}`
                                 );
@@ -405,14 +413,19 @@ export async function findAccount(user: User) {
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
     });
-    const account = await personService.findAccount({ personId: 'me' });
-    debug('account:', account);
+    let accounts = await personService.findAccounts({ personId: 'me' });
+    accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+    debug('accounts:', accounts);
+    if (accounts.length === 0) {
+        throw new Error('口座未開設です。');
+    }
+    const account = accounts[0];
 
     const text = util.format(
-        '口座ID: %s\n現在残高: %s\n引出可能残高: %s',
-        account.id,
-        parseInt(account.balance, 10).toLocaleString(),
-        parseInt(account.safeBalance, 10).toLocaleString()
+        '口座番号: %s\n残高: %s\n引出可能残高: %s',
+        account.accountNumber,
+        account.balance.toLocaleString('ja'),
+        account.availableBalance.toLocaleString('ja')
     );
 
     await request.post({
@@ -428,7 +441,7 @@ export async function findAccount(user: User) {
                     altText: '口座確認',
                     template: {
                         type: 'buttons',
-                        title: 'あなたのPecorino口座',
+                        title: '口座',
                         text: text,
                         actions: [
                             {
@@ -459,16 +472,26 @@ export async function searchAccountTradeActions(user: User) {
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
     });
-    const account = await personService.findAccount({ personId: 'me' });
-    let transferActions = await personService.searchAccountTradeActions({ personId: 'me' });
-    // tslint:disable-next-line:no-magic-numbers
-    transferActions = transferActions.reverse().slice(0, 10);
+    let accounts = await personService.findAccounts({ personId: 'me' });
+    accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+    debug('accounts:', accounts);
+    if (accounts.length === 0) {
+        throw new Error('口座未開設です。');
+    }
+    const account = accounts[0];
+    let transferActions = await personService.searchAccountMoneyTransferActions({
+        personId: 'me',
+        accountNumber: account.accountNumber
+    });
 
     if (transferActions.length === 0) {
         await LINE.pushMessage(user.userId, 'まだ取引履歴はありません。');
 
         return;
     }
+
+    // tslint:disable-next-line:no-magic-numbers
+    transferActions = transferActions.slice(0, 10);
 
     const actionsStr = transferActions.map(
         (a) => {
@@ -488,17 +511,16 @@ export async function searchAccountTradeActions(user: User) {
             }
 
             return util.format(
-                '●%s %s %s %s %s[%s] -> %s[%s] @%s %s',
-                (a.fromLocation.id === account.id) ? '出' : '入',
+                '●%s %s %s %s\n⇐ %s\n[%s]\n⇒ %s\n[%s]\n@%s',
+                ((<any>a.fromLocation).accountNumber === (<any>account).accountNumber) ? '出' : '入',
                 moment(a.endDate).format('YY.MM.DD HH:mm'),
                 actionName,
                 `${a.amount}円`,
                 a.fromLocation.name,
-                (a.fromLocation.id !== undefined) ? a.fromLocation.id : '',
+                ((<any>a.fromLocation).accountNumber !== undefined) ? (<any>a.fromLocation).accountNumber : '',
                 a.toLocation.name,
-                (a.toLocation.id !== undefined) ? a.toLocation.id : '',
-                a.purpose.typeOf,
-                (a.object !== undefined) ? a.object.notes : ''
+                ((<any>a.toLocation).accountNumber !== undefined) ? (<any>a.toLocation).accountNumber : '',
+                (a.description !== undefined) ? a.description : ''
             );
         }
     ).join('\n');
