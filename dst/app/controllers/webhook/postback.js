@@ -299,6 +299,7 @@ line://oaMessage/${LINE_ID}/?${friendMessage}`);
     });
 }
 exports.createTmpReservation = createTmpReservation;
+// tslint:disable-next-line:max-func-body-length
 function choosePaymentMethod(user, paymentMethod, transactionId, friendPayPrice) {
     return __awaiter(this, void 0, void 0, function* () {
         const personService = new ssktsapi.service.Person({
@@ -319,10 +320,18 @@ function choosePaymentMethod(user, paymentMethod, transactionId, friendPayPrice)
                 .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
                 .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.offer.seatReservation.ObjectType.SeatReservation);
             const amount = seatReservations[0].result.pecorinoAmount;
+            // 口座番号取得
+            let accounts = yield personService.findAccounts({ personId: 'me' });
+            accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+            debug('accounts:', accounts);
+            if (accounts.length === 0) {
+                throw new Error('口座未開設です。');
+            }
+            const account = accounts[0];
             const pecorinoAuthorization = yield placeOrderService.createPecorinoPaymentAuthorization({
                 transactionId: transactionId,
                 amount: amount,
-                fromAccountNumber: ''
+                fromAccountNumber: account.accountNumber
             });
             debug('Pecorino残高確認済', pecorinoAuthorization);
             yield LINE.pushMessage(user.userId, '残高の確認がとれました。');
@@ -485,6 +494,10 @@ function confirmFriendPay(user, token) {
         const friendPayInfo = yield user.verifyFriendPayToken(token);
         yield LINE.pushMessage(user.userId, `${friendPayInfo.price}円の友達決済を受け付けます。`);
         yield LINE.pushMessage(user.userId, '残高を確認しています...');
+        const personService = new ssktsapi.service.Person({
+            endpoint: process.env.API_ENDPOINT,
+            auth: user.authClient
+        });
         const placeOrderService = new ssktsapi.service.transaction.PlaceOrder({
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
@@ -495,10 +508,18 @@ function confirmFriendPay(user, token) {
             .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
             .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.offer.seatReservation.ObjectType.SeatReservation);
         const amount = seatReservations[0].result.pecorinoAmount;
+        // 口座番号取得
+        let accounts = yield personService.findAccounts({ personId: 'me' });
+        accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+        debug('accounts:', accounts);
+        if (accounts.length === 0) {
+            throw new Error('口座未開設です。');
+        }
+        const account = accounts[0];
         const pecorinoAuthorization = yield placeOrderService.createPecorinoPaymentAuthorization({
             transactionId: friendPayInfo.transactionId,
             amount: amount,
-            fromAccountNumber: ''
+            fromAccountNumber: account.accountNumber
         });
         debug('Pecorino残高確認済', pecorinoAuthorization);
         yield LINE.pushMessage(user.userId, '残高の確認がとれました。');

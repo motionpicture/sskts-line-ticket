@@ -313,6 +313,7 @@ line://oaMessage/${LINE_ID}/?${friendMessage}`);
 
 export type PaymentMethodType = 'Pecorino' | 'FriendPay';
 
+// tslint:disable-next-line:max-func-body-length
 export async function choosePaymentMethod(user: User, paymentMethod: PaymentMethodType, transactionId: string, friendPayPrice: number) {
     const personService = new ssktsapi.service.Person({
         endpoint: <string>process.env.API_ENDPOINT,
@@ -335,10 +336,20 @@ export async function choosePaymentMethod(user: User, paymentMethod: PaymentMeth
             .filter((a) => a.actionStatus === ssktsapi.factory.actionStatusType.CompletedActionStatus)
             .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.offer.seatReservation.ObjectType.SeatReservation);
         const amount = (<ssktsapi.factory.action.authorize.offer.seatReservation.IResult>seatReservations[0].result).pecorinoAmount;
+
+        // 口座番号取得
+        let accounts = await personService.findAccounts({ personId: 'me' });
+        accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+        debug('accounts:', accounts);
+        if (accounts.length === 0) {
+            throw new Error('口座未開設です。');
+        }
+        const account = accounts[0];
+
         const pecorinoAuthorization = await placeOrderService.createPecorinoPaymentAuthorization({
             transactionId: transactionId,
             amount: amount,
-            fromAccountNumber: ''
+            fromAccountNumber: account.accountNumber
         });
         debug('Pecorino残高確認済', pecorinoAuthorization);
         await LINE.pushMessage(user.userId, '残高の確認がとれました。');
@@ -504,6 +515,10 @@ export async function confirmFriendPay(user: User, token: string) {
     await LINE.pushMessage(user.userId, `${friendPayInfo.price}円の友達決済を受け付けます。`);
     await LINE.pushMessage(user.userId, '残高を確認しています...');
 
+    const personService = new ssktsapi.service.Person({
+        endpoint: <string>process.env.API_ENDPOINT,
+        auth: user.authClient
+    });
     const placeOrderService = new ssktsapi.service.transaction.PlaceOrder({
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
@@ -516,10 +531,19 @@ export async function confirmFriendPay(user: User, token: string) {
         .filter((a) => a.object.typeOf === ssktsapi.factory.action.authorize.offer.seatReservation.ObjectType.SeatReservation);
     const amount = (<ssktsapi.factory.action.authorize.offer.seatReservation.IResult>seatReservations[0].result).pecorinoAmount;
 
+    // 口座番号取得
+    let accounts = await personService.findAccounts({ personId: 'me' });
+    accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+    debug('accounts:', accounts);
+    if (accounts.length === 0) {
+        throw new Error('口座未開設です。');
+    }
+    const account = accounts[0];
+
     const pecorinoAuthorization = await placeOrderService.createPecorinoPaymentAuthorization({
         transactionId: friendPayInfo.transactionId,
         amount: amount,
-        fromAccountNumber: ''
+        fromAccountNumber: account.accountNumber
     });
     debug('Pecorino残高確認済', pecorinoAuthorization);
     await LINE.pushMessage(user.userId, '残高の確認がとれました。');
