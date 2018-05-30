@@ -67,7 +67,8 @@ export async function searchEventsByDate(user: User, date: string) {
     });
     let events = await eventService.searchIndividualScreeningEvent({
         startFrom: moment(`${date}T00:00:00+09:00`).toDate(),
-        startThrough: moment(`${date}T00:00:00+09:00`).add(1, 'day').toDate()
+        startThrough: moment(`${date}T00:00:00+09:00`).add(1, 'day').toDate(),
+        superEventLocationIdentifiers: ['MovieTheater-118']
     });
     // tslint:disable-next-line:no-magic-numbers
     events = events.slice(0, 10);
