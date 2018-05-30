@@ -94,11 +94,20 @@ export interface IFriendPayInfo {
 }
 
 /**
- * 友達決済情報
+ * おこづかい情報
  */
 export interface ITransferMoneyInfo {
+    /**
+     * LINEユーザーID
+     */
     userId: string;
-    accountId: string;
+    /**
+     * 振込先口座番号
+     */
+    accountNumber: string;
+    /**
+     * 振込先名
+     */
     name: string;
 }
 

@@ -582,18 +582,23 @@ function confirmTransferMoney(user, token, price) {
         if (PECORINO_AUTHORIZE_SERVER_DOMAIN === undefined) {
             throw new Error('PECORINO_AUTHORIZE_SERVER_DOMAIN undefined.');
         }
+        const personService = new ssktsapi.service.Person({
+            endpoint: process.env.API_ENDPOINT,
+            auth: user.authClient
+        });
+        let accounts = yield personService.findAccounts({ personId: 'me' });
+        accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+        debug('accounts:', accounts);
+        if (accounts.length === 0) {
+            throw new Error('口座未開設です。');
+        }
+        const account = accounts[0];
         const auth = new pecorinoapi.auth.ClientCredentials({
             domain: PECORINO_AUTHORIZE_SERVER_DOMAIN,
             clientId: PECORINO_CLIENT_ID,
             clientSecret: PECORINO_CLIENT_SECRET,
             scopes: [],
             state: ''
-        });
-        const oauth2client = new pecorinoapi.auth.OAuth2({
-            domain: PECORINO_AUTHORIZE_SERVER_DOMAIN
-        });
-        oauth2client.setCredentials({
-            access_token: yield user.authClient.getAccessToken()
         });
         const transferService = new pecorinoapi.service.transaction.Transfer({
             endpoint: PECORINO_API_ENDPOINT,
@@ -603,7 +608,7 @@ function confirmTransferMoney(user, token, price) {
             // tslint:disable-next-line:no-magic-numbers
             expires: moment().add(10, 'minutes').toDate(),
             agent: {
-                name: ''
+                name: user.userId
             },
             recipient: {
                 typeOf: 'Person',
@@ -613,8 +618,8 @@ function confirmTransferMoney(user, token, price) {
             },
             amount: price,
             notes: 'LINEチケットおこづかい',
-            fromAccountNumber: '',
-            toAccountNumber: transferMoneyInfo.accountId
+            fromAccountNumber: account.accountNumber,
+            toAccountNumber: transferMoneyInfo.accountNumber
         });
         debug('transaction started.', transaction.id);
         yield LINE.pushMessage(user.userId, '残高の確認がとれました。');
@@ -624,10 +629,6 @@ function confirmTransferMoney(user, token, price) {
         });
         debug('transaction confirmed.');
         yield LINE.pushMessage(user.userId, '転送が完了しました。');
-        const personService = new ssktsapi.service.Person({
-            endpoint: process.env.API_ENDPOINT,
-            auth: user.authClient
-        });
         const contact = yield personService.getContacts({ personId: 'me' });
         // 振込先に通知
         yield LINE.pushMessage(transferMoneyInfo.userId, `${contact.familyName} ${contact.givenName}から${price}円おこづかいが振り込まれました。`);

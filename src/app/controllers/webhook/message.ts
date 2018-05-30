@@ -206,7 +206,9 @@ export async function selectWhomAskForMoney(user: User) {
         endpoint: <string>process.env.API_ENDPOINT,
         auth: user.authClient
     });
-    const accounts = await personService.findAccounts({ personId: 'me' });
+    let accounts = await personService.findAccounts({ personId: 'me' });
+    accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+    debug('accounts:', accounts);
     if (accounts.length === 0) {
         throw new Error('口座未開設です。');
     }
@@ -215,7 +217,7 @@ export async function selectWhomAskForMoney(user: User) {
 
     const token = await user.signTransferMoneyInfo({
         userId: user.userId,
-        accountId: (<any>account).accountNumber,
+        accountNumber: account.accountNumber,
         name: `${contact.familyName} ${contact.givenName}`
     });
     const friendMessage = `TransferMoneyToken.${token}`;

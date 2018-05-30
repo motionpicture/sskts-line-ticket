@@ -220,7 +220,9 @@ function selectWhomAskForMoney(user) {
             endpoint: process.env.API_ENDPOINT,
             auth: user.authClient
         });
-        const accounts = yield personService.findAccounts({ personId: 'me' });
+        let accounts = yield personService.findAccounts({ personId: 'me' });
+        accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+        debug('accounts:', accounts);
         if (accounts.length === 0) {
             throw new Error('口座未開設です。');
         }
@@ -228,7 +230,7 @@ function selectWhomAskForMoney(user) {
         const contact = yield personService.getContacts({ personId: 'me' });
         const token = yield user.signTransferMoneyInfo({
             userId: user.userId,
-            accountId: account.accountNumber,
+            accountNumber: account.accountNumber,
             name: `${contact.familyName} ${contact.givenName}`
         });
         const friendMessage = `TransferMoneyToken.${token}`;

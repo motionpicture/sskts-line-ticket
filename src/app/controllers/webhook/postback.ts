@@ -608,6 +608,18 @@ export async function confirmTransferMoney(user: User, token: string, price: num
         throw new Error('PECORINO_AUTHORIZE_SERVER_DOMAIN undefined.');
     }
 
+    const personService = new ssktsapi.service.Person({
+        endpoint: <string>process.env.API_ENDPOINT,
+        auth: user.authClient
+    });
+    let accounts = await personService.findAccounts({ personId: 'me' });
+    accounts = accounts.filter((a) => a.status === ssktsapi.factory.pecorino.accountStatusType.Opened);
+    debug('accounts:', accounts);
+    if (accounts.length === 0) {
+        throw new Error('口座未開設です。');
+    }
+    const account = accounts[0];
+
     const auth = new pecorinoapi.auth.ClientCredentials({
         domain: PECORINO_AUTHORIZE_SERVER_DOMAIN,
         clientId: PECORINO_CLIENT_ID,
@@ -615,14 +627,6 @@ export async function confirmTransferMoney(user: User, token: string, price: num
         scopes: [],
         state: ''
     });
-
-    const oauth2client = new pecorinoapi.auth.OAuth2({
-        domain: PECORINO_AUTHORIZE_SERVER_DOMAIN
-    });
-    oauth2client.setCredentials({
-        access_token: await user.authClient.getAccessToken()
-    });
-
     const transferService = new pecorinoapi.service.transaction.Transfer({
         endpoint: PECORINO_API_ENDPOINT,
         auth: auth
@@ -632,7 +636,7 @@ export async function confirmTransferMoney(user: User, token: string, price: num
         // tslint:disable-next-line:no-magic-numbers
         expires: moment().add(10, 'minutes').toDate(),
         agent: {
-            name: ''
+            name: user.userId
         },
         recipient: {
             typeOf: 'Person',
@@ -642,8 +646,8 @@ export async function confirmTransferMoney(user: User, token: string, price: num
         },
         amount: price,
         notes: 'LINEチケットおこづかい',
-        fromAccountNumber: '',
-        toAccountNumber: transferMoneyInfo.accountId
+        fromAccountNumber: account.accountNumber,
+        toAccountNumber: transferMoneyInfo.accountNumber
     });
     debug('transaction started.', transaction.id);
     await LINE.pushMessage(user.userId, '残高の確認がとれました。');
@@ -655,10 +659,6 @@ export async function confirmTransferMoney(user: User, token: string, price: num
     debug('transaction confirmed.');
     await LINE.pushMessage(user.userId, '転送が完了しました。');
 
-    const personService = new ssktsapi.service.Person({
-        endpoint: <string>process.env.API_ENDPOINT,
-        auth: user.authClient
-    });
     const contact = await personService.getContacts({ personId: 'me' });
 
     // 振込先に通知
