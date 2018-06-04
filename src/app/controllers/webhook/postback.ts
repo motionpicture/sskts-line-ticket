@@ -1,8 +1,6 @@
 /**
  * LINE webhook postbackコントローラー
- * @namespace app.controllers.webhook.postback
  */
-
 import * as pecorinoapi from '@motionpicture/pecorino-api-nodejs-client';
 import * as ssktsapi from '@motionpicture/sskts-api-nodejs-client';
 import * as sskts from '@motionpicture/sskts-domain';
@@ -10,8 +8,6 @@ import * as createDebug from 'debug';
 import { google } from 'googleapis';
 import * as moment from 'moment';
 import * as request from 'request-promise-native';
-// tslint:disable-next-line:no-require-imports no-var-requires
-require('moment-timezone');
 
 import * as LINE from '../../../line';
 import User from '../../user';
@@ -25,30 +21,6 @@ const PECORINO_API_ENDPOINT = process.env.PECORINO_API_ENDPOINT;
 const PECORINO_CLIENT_ID = process.env.PECORINO_CLIENT_ID;
 const PECORINO_CLIENT_SECRET = process.env.PECORINO_CLIENT_SECRET;
 const PECORINO_AUTHORIZE_SERVER_DOMAIN = process.env.PECORINO_AUTHORIZE_SERVER_DOMAIN;
-
-/**
- * 購入番号で取引を検索する
- * @export
- * @memberof app.controllers.webhook.postback
- */
-export async function searchTransactionByPaymentNo(userId: string, paymentNo: string, performanceDate: string) {
-    await LINE.pushMessage(userId, `${performanceDate}-${paymentNo}の取引を検索しています...`);
-    await LINE.pushMessage(userId, 'implementing...');
-}
-
-/**
- * 取引IDから取引情報詳細を送信する
- * @export
- * @function
- * @memberof app.controllers.webhook.postback
- * @param {string} userId LINEユーザーID
- * @param {string} transactionId 取引ID
- */
-// tslint:disable-next-line:cyclomatic-complexity max-func-body-length
-// async function pushTransactionDetails(userId: string, orderNumber: string) {
-//     await LINE.pushMessage(userId, `${orderNumber}の取引詳細をまとめています...`);
-//     await LINE.pushMessage(userId, 'implementing...');
-// }
 
 /**
  * 日付でイベント検索
@@ -767,36 +739,4 @@ export async function depositFromCreditCard(user: User, amount: number, __: stri
     // });
     // debug('transaction confirmed.');
     await LINE.pushMessage(user.userId, '入金処理が完了しました。');
-}
-
-/**
- * 取引検索(csvダウンロード)
- * @export
- * @function
- * @memberof app.controllers.webhook.postback
- * @param {string} userId
- * @param {string} date YYYY-MM-DD形式
- */
-export async function searchTransactionsByDate(userId: string, date: string) {
-    await LINE.pushMessage(userId, `${date}の取引を検索しています...`);
-
-    const startFrom = moment(`${date}T00:00:00+09:00`);
-    const startThrough = moment(`${date}T00:00:00+09:00`).add(1, 'day');
-
-    const csv = await sskts.service.transaction.placeOrder.download(
-        {
-            startFrom: startFrom.toDate(),
-            startThrough: startThrough.toDate()
-        },
-        'csv'
-    )({ transaction: new sskts.repository.Transaction(sskts.mongoose.connection) });
-
-    await LINE.pushMessage(userId, 'csvを作成しています...');
-
-    const sasUrl = await sskts.service.util.uploadFile({
-        fileName: `sskts-line-ticket-transactions-${moment().format('YYYYMMDDHHmmss')}.csv`,
-        text: csv
-    })();
-
-    await LINE.pushMessage(userId, `download -> ${sasUrl} `);
 }

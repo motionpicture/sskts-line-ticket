@@ -105,13 +105,6 @@ function postback(event, user) {
         const userId = event.source.userId;
         try {
             switch (data.action) {
-                case 'searchTransactionByPaymentNo':
-                    // 購入番号と開演日で取引検索
-                    yield PostbackController.searchTransactionByPaymentNo(userId, data.paymentNo, event.postback.params.date);
-                    break;
-                case 'searchTransactionsByDate':
-                    yield PostbackController.searchTransactionsByDate(userId, event.postback.params.date);
-                    break;
                 // イベント検索
                 case 'searchEventsByDate':
                     yield PostbackController.searchEventsByDate(user, event.postback.params.date);

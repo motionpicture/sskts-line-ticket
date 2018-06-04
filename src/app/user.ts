@@ -36,6 +36,10 @@ export interface ICredentials {
      */
     access_token: string;
     /**
+     * IDトークン
+     */
+    id_token?: string;
+    /**
      * トークンタイプ
      */
     token_type?: string;

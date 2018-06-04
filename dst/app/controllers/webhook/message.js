@@ -1,8 +1,4 @@
 "use strict";
-/**
- * LINE webhook messageコントローラー
- * @namespace app.controllers.webhook.message
- */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12,8 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * LINE webhook messageコントローラー
+ */
 const ssktsapi = require("@motionpicture/sskts-api-nodejs-client");
-const sskts = require("@motionpicture/sskts-domain");
 const createDebug = require("debug");
 const moment = require("moment");
 const request = require("request-promise-native");
@@ -366,6 +364,7 @@ function searchTickets(user) {
             ownedBy: 'me',
             ownedAt: new Date()
         });
+        debug(ownershipInfos.length, 'ownershipInfos found.');
         if (ownershipInfos.length === 0) {
             yield LINE.pushMessage(user.userId, '座席予約が見つかりませんでした。');
         }
@@ -387,16 +386,15 @@ function searchTickets(user) {
                                     const itemOffered = ownershipInfo.typeOfGood;
                                     // tslint:disable-next-line:max-line-length
                                     const qr = `https://chart.apis.google.com/chart?chs=300x300&cht=qr&chl=${itemOffered.reservedTicket.ticketToken}`;
-                                    const text = util.format('%s-%s\n@%s\n%s', moment(itemOffered.reservationFor.startDate).format('YYYY-MM-DD HH:mm'), moment(itemOffered.reservationFor.endDate).format('HH:mm'), 
+                                    const text = util.format('%s-\n@%s\n%s', moment(itemOffered.reservationFor.startDate).format('YYYY-MM-DD HH:mm'), 
                                     // tslint:disable-next-line:max-line-length
-                                    `${itemOffered.reservationFor.superEvent.location.name.ja} ${itemOffered.reservationFor.location.name.ja}`, 
+                                    `${itemOffered.reservationFor.superEvent.location.name.ja}`, 
                                     // tslint:disable-next-line:max-line-length
-                                    `${itemOffered.reservedTicket.ticketedSeat.seatNumber} ${itemOffered.reservedTicket.coaTicketInfo.ticketName} ￥${itemOffered.reservedTicket.coaTicketInfo.salePrice}`);
+                                    `${itemOffered.reservedTicket.ticketedSeat.seatNumber} ${itemOffered.reservedTicket.coaTicketInfo.ticketName}`);
                                     return {
                                         thumbnailImageUrl: qr,
                                         // imageBackgroundColor: '#000000',
                                         title: itemOffered.reservationFor.name.ja,
-                                        // tslint:disable-next-line:max-line-length
                                         text: text,
                                         actions: [
                                             {
@@ -594,30 +592,6 @@ function askFromWhenAndToWhen(userId) {
     });
 }
 exports.askFromWhenAndToWhen = askFromWhenAndToWhen;
-/**
- * 取引CSVダウンロードURIを発行する
- * @export
- * @function
- * @memberof app.controllers.webhook.message
- */
-function publishURI4transactionsCSV(userId, dateFrom, dateThrough) {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield LINE.pushMessage(userId, `${dateFrom} - ${dateThrough}の取引を検索しています...`);
-        const startFrom = moment(`${dateFrom}T00: 00: 00 + 09: 00`, 'YYYYMMDDThh:mm:ssZ');
-        const startThrough = moment(`${dateThrough}T00: 00: 00 + 09: 00`, 'YYYYMMDDThh:mm:ssZ').add(1, 'day');
-        const csv = yield sskts.service.transaction.placeOrder.download({
-            startFrom: startFrom.toDate(),
-            startThrough: startThrough.toDate()
-        }, 'csv')({ transaction: new sskts.repository.Transaction(sskts.mongoose.connection) });
-        yield LINE.pushMessage(userId, 'csvを作成しています...');
-        const sasUrl = yield sskts.service.util.uploadFile({
-            fileName: `sskts - line - ticket - transactions - ${moment().format('YYYYMMDDHHmmss')}.csv`,
-            text: csv
-        })();
-        yield LINE.pushMessage(userId, `download -> ${sasUrl} `);
-    });
-}
-exports.publishURI4transactionsCSV = publishURI4transactionsCSV;
 function logout(user) {
     return __awaiter(this, void 0, void 0, function* () {
         yield request.post({

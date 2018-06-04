@@ -5,13 +5,13 @@
  */
 const sskts = require("@motionpicture/sskts-domain");
 const bodyParser = require("body-parser");
+const createDebug = require("debug");
 const express = require("express");
 const errorHandler_1 = require("./middlewares/errorHandler");
 const notFoundHandler_1 = require("./middlewares/notFoundHandler");
-const session_1 = require("./middlewares/session");
 const mongooseConnectionOptions_1 = require("../mongooseConnectionOptions");
+const debug = createDebug('sskts-line-ticket:*');
 const app = express();
-app.use(session_1.default); // セッション
 // view engine setup
 app.set('views', `${__dirname}/../../views`);
 app.set('view engine', 'ejs');
@@ -23,7 +23,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // app.use(express.static(__dirname + '/../public'));
 // MongoDB接続
 sskts.mongoose.connect(process.env.MONGOLAB_URI, mongooseConnectionOptions_1.default)
-    .then()
+    .then(() => { debug('MongoDB connected!'); })
     .catch(console.error);
 // routers
 const router_1 = require("./routes/router");

@@ -115,15 +115,6 @@ export async function postback(event: LINE.IWebhookEvent, user: User) {
 
     try {
         switch (data.action) {
-            case 'searchTransactionByPaymentNo':
-                // 購入番号と開演日で取引検索
-                await PostbackController.searchTransactionByPaymentNo(userId, <string>data.paymentNo, <string>event.postback.params.date);
-                break;
-
-            case 'searchTransactionsByDate':
-                await PostbackController.searchTransactionsByDate(userId, <string>event.postback.params.date);
-                break;
-
             // イベント検索
             case 'searchEventsByDate':
                 await PostbackController.searchEventsByDate(user, <string>event.postback.params.date);

@@ -1,10 +1,7 @@
 /**
  * LINE webhook messageコントローラー
- * @namespace app.controllers.webhook.message
  */
-
 import * as ssktsapi from '@motionpicture/sskts-api-nodejs-client';
-import * as sskts from '@motionpicture/sskts-domain';
 import * as createDebug from 'debug';
 import * as moment from 'moment';
 import * as request from 'request-promise-native';
@@ -353,6 +350,7 @@ export async function searchTickets(user: User) {
         ownedBy: 'me',
         ownedAt: new Date()
     });
+    debug(ownershipInfos.length, 'ownershipInfos found.');
 
     if (ownershipInfos.length === 0) {
         await LINE.pushMessage(user.userId, '座席予約が見つかりませんでした。');
@@ -375,20 +373,18 @@ export async function searchTickets(user: User) {
                                 // tslint:disable-next-line:max-line-length
                                 const qr = `https://chart.apis.google.com/chart?chs=300x300&cht=qr&chl=${itemOffered.reservedTicket.ticketToken}`;
                                 const text = util.format(
-                                    '%s-%s\n@%s\n%s',
+                                    '%s-\n@%s\n%s',
                                     moment(itemOffered.reservationFor.startDate).format('YYYY-MM-DD HH:mm'),
-                                    moment(itemOffered.reservationFor.endDate).format('HH:mm'),
                                     // tslint:disable-next-line:max-line-length
-                                    `${(<any>itemOffered.reservationFor).superEvent.location.name.ja} ${(<any>itemOffered.reservationFor.location).name.ja}`,
+                                    `${(<ssktsapi.factory.event.individualScreeningEvent.IEvent>itemOffered.reservationFor).superEvent.location.name.ja}`,
                                     // tslint:disable-next-line:max-line-length
-                                    `${itemOffered.reservedTicket.ticketedSeat.seatNumber} ${itemOffered.reservedTicket.coaTicketInfo.ticketName} ￥${itemOffered.reservedTicket.coaTicketInfo.salePrice}`
+                                    `${itemOffered.reservedTicket.ticketedSeat.seatNumber} ${itemOffered.reservedTicket.coaTicketInfo.ticketName}`
                                 );
 
                                 return {
                                     thumbnailImageUrl: qr,
                                     // imageBackgroundColor: '#000000',
                                     title: itemOffered.reservationFor.name.ja,
-                                    // tslint:disable-next-line:max-line-length
                                     text: text,
                                     actions: [
                                         {
@@ -611,36 +607,6 @@ export async function askFromWhenAndToWhen(userId: string) {
             }
         }
     ).promise();
-}
-
-/**
- * 取引CSVダウンロードURIを発行する
- * @export
- * @function
- * @memberof app.controllers.webhook.message
- */
-export async function publishURI4transactionsCSV(userId: string, dateFrom: string, dateThrough: string) {
-    await LINE.pushMessage(userId, `${dateFrom} - ${dateThrough}の取引を検索しています...`);
-
-    const startFrom = moment(`${dateFrom}T00: 00: 00 + 09: 00`, 'YYYYMMDDThh:mm:ssZ');
-    const startThrough = moment(`${dateThrough}T00: 00: 00 + 09: 00`, 'YYYYMMDDThh:mm:ssZ').add(1, 'day');
-
-    const csv = await sskts.service.transaction.placeOrder.download(
-        {
-            startFrom: startFrom.toDate(),
-            startThrough: startThrough.toDate()
-        },
-        'csv'
-    )({ transaction: new sskts.repository.Transaction(sskts.mongoose.connection) });
-
-    await LINE.pushMessage(userId, 'csvを作成しています...');
-
-    const sasUrl = await sskts.service.util.uploadFile({
-        fileName: `sskts - line - ticket - transactions - ${moment().format('YYYYMMDDHHmmss')}.csv`,
-        text: csv
-    })();
-
-    await LINE.pushMessage(userId, `download -> ${sasUrl} `);
 }
 
 export async function logout(user: User) {
